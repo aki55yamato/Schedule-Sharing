@@ -7,7 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-white text-gray-800 pb-16 text-xs">
+<body class="bg-white text-gray-800 pb-16 text-xs select-none">
 
     <!-- ヘッダー -->
     <header class="bg-gray-800 text-white p-2 shadow-sm sticky top-0 z-40 flex justify-between items-center">
@@ -27,7 +27,7 @@
             </div>
 
             <div id="week-card-container" class="space-y-1.5">
-                <!-- JavaScriptで動的生成 -->
+                <!-- JavaScriptで動적生成 -->
             </div>
         </div>
 
@@ -104,7 +104,7 @@
 
     </main>
 
-    <!-- 下部固定タブナビゲーション（月と週を入れ替え） -->
+    <!-- 下部固定タブナビゲーション -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-1.5 z-50">
         <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
             <span class="text-sm">🗓️</span>
@@ -280,7 +280,7 @@
             }
         }
 
-        // --- 月表示（日付・テキストの文字サイズを拡大） ---
+        // --- 月表示（スクロールを完全に排除し固定表示） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -308,6 +308,7 @@
                 let offDay = isOffDay(d);
 
                 let cell = document.createElement('div');
+                // overflow-hidden を指定し、スクロール領域を作らずに固定枠内に収める
                 cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
                 cell.onclick = () => {
                     document.getElementById('edit-id').value = '';
@@ -319,15 +320,14 @@
                     switchView('input');
                 };
 
-                // 日付の文字サイズを少し大きく（10px）
-                let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 overflow-y-auto flex-1 mt-0.5">`;
+                // スクロールコンテナ（overflow-y-auto）を外し、通常のブロック要素に変更して固定化
+                let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 flex-1 mt-0.5 overflow-hidden">`;
                 
                 ['あきた', 'ちーた'].forEach(person => {
                     let s = daySchedules.find(item => item.person === person);
                     if (s) {
                         let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold">あ:</span>' : '<span class="text-red-600 font-bold">ち:</span>';
                         let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        // テキストの文字サイズを少し大きく（8.5px）
                         contents += `<div class="text-[8.5px] leading-tight break-words">${nameBadge}${s.plan} ${s.time} (${mealStr})</div>`;
                     }
                 });
