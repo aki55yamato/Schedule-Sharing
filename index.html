@@ -12,7 +12,11 @@
     <!-- ヘッダー -->
     <header class="bg-gray-800 text-white p-2 shadow-sm sticky top-0 z-40 flex justify-between items-center">
         <h1 class="text-xs font-bold">📅 ふたりの予定ボード</h1>
-        <span id="current-month-label" class="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded">2026年10月</span>
+        <!-- 右上の年月クリックで月選択用inputを起動 -->
+        <div class="relative">
+            <button onclick="document.getElementById('month-picker').showPicker()" id="current-month-label" class="text-[10px] bg-gray-700 px-2 py-1 rounded font-bold cursor-pointer hover:bg-gray-600">2026年10月 ▼</button>
+            <input type="month" id="month-picker" class="absolute opacity-0 pointer-events-none" onchange="changeMonthByPicker(this.value)">
+        </div>
     </header>
 
     <!-- メインコンテンツ -->
@@ -22,13 +26,13 @@
         <div id="view-week" class="space-y-1">
             <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold">
                 <button onclick="changeWeek(-1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">◀ 前の週</button>
-                <span id="week-range-label">10/4(日) 〜 10/10(土)</span>
+                <span id="week-range-label">10/5(月) 〜 10/11(日)</span>
                 <button onclick="changeWeek(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">次の週 ▶</button>
             </div>
 
-            <!-- 週ごとのリスト（極限まで詰めたレイアウト） -->
+            <!-- 週ごとのリスト（月曜始まり・左側日付カラム） -->
             <div id="week-card-container" class="space-y-1">
-                <!-- JavaScriptで動적生成 -->
+                <!-- JavaScriptで動的生成 -->
             </div>
         </div>
 
@@ -39,10 +43,10 @@
                 <span id="month-title-label">2026年 10月</span>
                 <button onclick="changeMonth(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">翌月 ▶</button>
             </div>
-            <!-- カレンダーグリッド（縦長に調整） -->
+            <!-- カレンダーグリッド -->
             <div class="bg-white border rounded p-1">
                 <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-1">
-                    <span class="text-red-600">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-600">土</span>
+                    <span class="text-red-600">月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-600">土</span><span class="text-red-600">日</span>
                 </div>
                 <div id="calendar-grid" class="grid grid-cols-7 gap-0.5 text-center">
                     <!-- JavaScriptで動的生成 -->
@@ -75,7 +79,7 @@
                 <input type="text" id="input-time" placeholder="例：19:00、自宅" class="w-full border rounded p-1 text-xs">
             </div>
             <div class="grid grid-cols-2 gap-2" id="meal-input-container">
-                <!-- 昼食（土日のみ表示） -->
+                <!-- 昼食（土日祝のみ表示） -->
                 <div id="lunch-input-wrap" class="hidden">
                     <label class="block text-[10px] font-bold text-gray-600 mb-0.5">昼食要否</label>
                     <select id="input-lunch" class="w-full border rounded p-1 text-xs bg-white">
@@ -133,6 +137,37 @@
 
         let targetDate = new Date('2026-10-02');
 
+        // --- 日本の祝日判定ロジック ---
+        function isJapaneseHoliday(date) {
+            let y = date.getFullYear();
+            let m = date.getMonth() + 1;
+            let d = date.getDate();
+            let dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+            // 固定祝日・簡易ハッピーマンデー計算（主要な祝日）
+            const holidays = [
+                `${y}-01-01`, `${y}-02-11`, `${y}-02-23`, `${y}-04-29`,
+                `${y}-05-03`, `${y}-05-04`, `${y}-05-05`, `${y}-11-03`,
+                `${y}-11-23`, `${y}-12-25`
+            ];
+            if (holidays.includes(dateStr)) return true;
+
+            // 春分の日・秋分日の簡易計算
+            let vernal = Math.floor(20.8431 + 0.242194 * (y - 2000)) - Math.floor((y - 2000) / 4);
+            let autumnal = Math.floor(23.2488 + 0.242194 * (y - 2000)) - Math.floor((y - 2000) / 4);
+            if (m === 3 && d === vernal) return true;
+            if (m === 9 && d === autumnal) return true;
+
+            // 簡易ハッピーマンデー（成人の日、海の日、敬老の日、スポーツの日など）
+            // 必要に応じて追加・調整可能
+            return false;
+        }
+
+        function isOffDay(date) {
+            let day = date.getDay(); // 0:日, 6:土
+            return (day === 0 || day === 6 || isJapaneseHoliday(date));
+        }
+
         function switchView(view) {
             ['week', 'month', 'input'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
@@ -161,12 +196,10 @@
 
         function updateMealInputVisibility(dateStr) {
             let d = new Date(dateStr);
-            let dayOfWeek = d.getDay();
-            let isWeekend = (dayOfWeek === 0 || dayOfWeek === 6); // 日曜 or 土曜
             let lunchWrap = document.getElementById('lunch-input-wrap');
             let container = document.getElementById('meal-input-container');
             
-            if (isWeekend) {
+            if (isOffDay(d)) {
                 lunchWrap.classList.remove('hidden');
                 container.className = "grid grid-cols-2 gap-2";
             } else {
@@ -175,69 +208,74 @@
             }
         }
 
-        // 週表示（超コンパクト・指定カラー適用）
+        // --- 週表示（月曜始まり・左側日付カラム） ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
 
             let startOfWeek = new Date(targetDate);
             let day = startOfWeek.getDay();
-            startOfWeek.setDate(startOfWeek.getDate() - day);
+            // 月曜始まりに調整 (day === 0 のときは日曜なので -6、それ以外は -(day-1))
+            let diff = (day === 0) ? -6 : 1 - day;
+            startOfWeek.setDate(startOfWeek.getDate() + diff);
 
             let endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(endOfWeek.getDate() + 6);
 
             document.getElementById('week-range-label').innerText = 
                 `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
+            document.getElementById('current-month-label').innerText = `${targetDate.getFullYear()}年${targetDate.getMonth()+1}月 ▼`;
+
+            const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
 
             for (let i = 0; i < 7; i++) {
                 let d = new Date(startOfWeek);
                 d.setDate(d.getDate() + i);
                 let dateStr = d.toISOString().split('T')[0];
 
-                let dayName = ['日', '月', '火', '水', '木', '金', '土'][i];
-                let isSun = (i === 0);
-                let isSat = (i === 6);
+                let isSun = (d.getDay() === 0);
+                let isSat = (d.getDay() === 6);
+                let isHoli = isJapaneseHoliday(d);
 
-                // ボーダーカラー：平日はグレー、土曜は青、日曜は赤
-                let borderClass = 'border-gray-300';
+                // カラー設定：平日はグレー、土曜は青、日曜・祝日は赤
                 let textColClass = 'text-gray-700';
-                if (isSun) { borderClass = 'border-red-500'; textColClass = 'text-red-600 font-bold'; }
-                if (isSat) { borderClass = 'border-blue-500'; textColClass = 'text-blue-600 font-bold'; }
+                if (isSun || isHoli) textColClass = 'text-red-600 font-bold';
+                if (isSat) textColClass = 'text-blue-600 font-bold';
 
                 let daySchedules = schedules.filter(s => s.date === dateStr);
-                let isWeekend = isSun || isSat;
+                let offDay = isOffDay(d);
 
                 let card = document.createElement('div');
-                card.className = `bg-white border-l-4 ${borderClass} border y-card text-[11px] p-1`;
+                card.className = `bg-white border rounded p-1 text-[11px] flex items-stretch space-x-1`;
                 
-                let rowsHtml = '';
+                // 左側の日付カラム
+                let dateCol = `
+                    <div class="w-14 shrink-0 flex flex-col justify-center items-center bg-gray-50 border-r pr-1 text-center ${textColClass}">
+                        <span class="text-[10px]">${d.getMonth()+1}/${d.getDate()}</span>
+                        <span class="text-[9px]">(${dayNames[i]})</span>
+                    </div>
+                `;
+
+                // 右側の2人分予定エリア
+                let rowsHtml = '<div class="flex-1 space-y-0.5">';
                 ['あきた', 'ちーた'].forEach(person => {
                     let item = daySchedules.find(s => s.person === person);
-                    let mealText = isWeekend ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
+                    let mealText = offDay ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
                     
                     rowsHtml += `
                         <div class="flex items-center justify-between py-0.5 border-b border-gray-100 last:border-none">
                             <span class="font-bold px-1 rounded text-[9px] w-12 text-center ${person === 'あきた' ? 'bg-gray-100 text-gray-800' : 'bg-gray-200 text-gray-900'}">${person}</span>
                             <span class="flex-1 truncate px-1 font-bold">${item ? item.plan : '-'}</span>
                             <span class="w-14 text-right text-gray-500">${item ? item.time : '-'}</span>
-                            <span class="w-12 text-center text-gray-600">${mealText}</span>
+                            <span class="w-14 text-center text-gray-600">${mealText}</span>
                             <span class="flex-1 truncate text-gray-400 text-[10px] px-1">${item?.memo ? 'm:' + item.memo : ''}</span>
                             <button onclick="editScheduleByDateAndPerson('${dateStr}', '${person}')" class="text-[10px] text-gray-400 hover:text-black px-1">✏️</button>
                         </div>
                     `;
                 });
+                rowsHtml += '</div>';
 
-                card.innerHTML = `
-                    <div class="flex justify-between items-center bg-gray-50 px-1 py-0.5 mb-0.5">
-                        <span class="${textColClass}">
-                            ${d.getMonth()+1}/${d.getDate()} (${dayName})
-                        </span>
-                    </div>
-                    <div class="space-y-0.5">
-                        ${rowsHtml}
-                    </div>
-                `;
+                card.innerHTML = dateCol + rowsHtml;
                 container.appendChild(card);
             }
         }
@@ -247,7 +285,25 @@
             renderWeekView();
         }
 
-        // 月表示（縦長に修正）
+        function changeMonth(direction) {
+            targetDate.setMonth(targetDate.getMonth() + direction);
+            renderWeekView();
+            if(!document.getElementById('view-month').classList.contains('hidden')) {
+                renderMonthView();
+            }
+        }
+
+        function changeMonthByPicker(value) {
+            if(!value) return;
+            let parts = value.split('-');
+            targetDate.setFullYear(parseInt(parts[0]));
+            targetDate.setMonth(parseInt(parts[1]) - 1);
+            targetDate.setDate(1);
+            renderWeekView();
+            renderMonthView();
+        }
+
+        // --- 月表示（月曜始まり・詳細情報表示） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -256,23 +312,26 @@
             let month = targetDate.getMonth();
 
             document.getElementById('month-title-label').innerText = `${year}年 ${month + 1}月`;
-            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月`;
+            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月 ▼`;
 
-            let firstDayIndex = new Date(year, month, 1).getDay();
+            let firstDay = new Date(year, month, 1).getDay();
+            // 月曜始まりにするためのインデックス調整 (日曜=0 -> 6, 月曜=1 -> 0 ...)
+            let firstDayIndex = (firstDay === 0) ? 6 : firstDay - 1;
             let lastDay = new Date(year, month + 1, 0).getDate();
 
             for (let i = 0; i < firstDayIndex; i++) {
                 let emptyCell = document.createElement('div');
-                emptyCell.className = 'h-20 bg-gray-50/50 border rounded';
+                emptyCell.className = 'h-24 bg-gray-50/50 border rounded';
                 grid.appendChild(emptyCell);
             }
 
             for (let day = 1; day <= lastDay; day++) {
+                let d = new Date(year, month, day);
                 let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 let daySchedules = schedules.filter(s => s.date === dateStr);
 
                 let cell = document.createElement('div');
-                cell.className = `p-1 border rounded h-20 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
+                cell.className = `p-0.5 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
                 cell.onclick = () => {
                     document.getElementById('edit-id').value = '';
                     document.getElementById('input-date').value = dateStr;
@@ -283,20 +342,23 @@
                     switchView('input');
                 };
 
-                let contents = `<div class="text-[10px] font-bold text-gray-700">${day}</div><div class="space-y-0.5 overflow-hidden flex-1">`;
-                daySchedules.forEach(s => {
-                    contents += `<div class="text-[8px] truncate"><span class="font-bold">${s.person[0]}:</span>${s.plan}</div>`;
+                let contents = `<div class="text-[9px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 overflow-hidden flex-1 mt-0.5">`;
+                
+                ['あきた', 'ちーた'].forEach(person => {
+                    let s = daySchedules.find(item => item.person === person);
+                    if (s) {
+                        let shortName = person[0]; // あ or ち
+                        let offDay = isOffDay(d);
+                        let mealStr = offDay ? `昼:${s.lunch||'-'}/夕:${s.dinner||'-'}` : `夕:${s.dinner||'-'}`;
+                        contents += `<div class="text-[7px] truncate leading-tight"><span class="font-bold">${shortName}:</span>${s.plan}/${s.time}/${mealStr}</div>`;
+                    }
                 });
+
                 contents += `</div>`;
                 cell.innerHTML = contents;
 
                 grid.appendChild(cell);
             }
-        }
-
-        function changeMonth(direction) {
-            targetDate.setMonth(targetDate.getMonth() + direction);
-            renderMonthView();
         }
 
         function editScheduleByDateAndPerson(dateStr, person) {
