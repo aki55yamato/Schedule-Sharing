@@ -1,22 +1,32 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full overflow-hidden">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ふたり専用 予定共有ボード</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ページ全体がバウンスしたり伸びたりするのを完全に防ぐ */
+        body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+    </style>
 </head>
-<body class="bg-white text-gray-800 pb-16 text-xs select-none">
+<body class="bg-white text-gray-800 text-xs select-none h-full flex flex-col justify-between">
 
     <!-- ヘッダー -->
-    <header class="bg-gray-800 text-white p-2 shadow-sm sticky top-0 z-40 flex justify-between items-center">
+    <header class="bg-gray-800 text-white p-2 shadow-sm z-40 flex justify-between items-center shrink-0">
         <h1 class="text-xs font-bold">📅 ふたりの予定ボード</h1>
         <span id="current-month-label" class="text-[10px] bg-gray-700 px-2 py-1 rounded font-bold">2026年10月</span>
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="max-w-md mx-auto p-1.5 space-y-2">
+    <main class="max-w-md w-full mx-auto p-1.5 space-y-2 overflow-hidden flex-1 flex flex-col justify-center">
 
         <!-- ① 週表示ビュー -->
         <div id="view-week" class="space-y-1.5 hidden">
@@ -27,7 +37,7 @@
             </div>
 
             <div id="week-card-container" class="space-y-1.5">
-                <!-- JavaScriptで動적生成 -->
+                <!-- JavaScriptで動的生成 -->
             </div>
         </div>
 
@@ -105,7 +115,7 @@
     </main>
 
     <!-- 下部固定タブナビゲーション -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-1.5 z-50">
+    <nav class="bg-white border-t border-gray-200 flex justify-around p-1.5 z-50 shrink-0">
         <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
             <span class="text-sm">🗓️</span>
             <span class="text-[10px]">月表示</span>
@@ -175,7 +185,6 @@
                 document.getElementById('input-date').value = todayStr;
                 updateMealInputVisibility(todayStr);
             }
-            window.scrollTo(0, 0);
         }
 
         document.getElementById('input-date').addEventListener('change', (e) => {
@@ -280,7 +289,7 @@
             }
         }
 
-        // --- 月表示（スクロールを完全に排除し固定表示） ---
+        // --- 月表示（固定表示） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -308,7 +317,6 @@
                 let offDay = isOffDay(d);
 
                 let cell = document.createElement('div');
-                // overflow-hidden を指定し、スクロール領域を作らずに固定枠内に収める
                 cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
                 cell.onclick = () => {
                     document.getElementById('edit-id').value = '';
@@ -320,7 +328,6 @@
                     switchView('input');
                 };
 
-                // スクロールコンテナ（overflow-y-auto）を外し、通常のブロック要素に変更して固定化
                 let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 flex-1 mt-0.5 overflow-hidden">`;
                 
                 ['あきた', 'ちーた'].forEach(person => {
