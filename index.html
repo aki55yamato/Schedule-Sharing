@@ -21,6 +21,13 @@
             position: relative;
             z-index: 10;
         }
+        /* 複数行のテキスト省略用クラス */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-white text-gray-800 text-xs select-none h-full flex flex-col justify-between">
@@ -140,9 +147,9 @@
         </div>
     </div>
 
-    <!-- モーダル：1週間一括入力用 -->
+    <!-- モーダル：1週間一括入力用（高さ85%に調整） -->
     <div id="batch-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3">
-        <div class="bg-white border rounded space-y-3 w-full max-w-md shadow-xl flex flex-col max-h-[90vh] p-4">
+        <div class="bg-white border rounded space-y-3 w-full max-w-md shadow-xl flex flex-col max-h-[85vh] p-4">
             <div class="flex justify-between items-center border-b pb-2 shrink-0">
                 <h2 class="text-xs font-bold text-gray-800">📝 1週間分の予定を一括入力</h2>
                 <select id="batch-person" class="border rounded p-1 text-xs bg-white font-bold text-blue-600">
@@ -246,7 +253,7 @@
             }
         }
 
-        // --- 週表示（修正版） ---
+        // --- 週表示 ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -264,7 +271,6 @@
                 `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()}(${dayNames[startOfWeek.getDay()]}) 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}(${dayNames[endOfWeek.getDay()]})`;
 
             const weekDayOrder = ['月', '火', '水', '木', '金', '土', '日'];
-            const jsDayToOrderIndex = [6, 0, 1, 2, 3, 4, 5]; // 日(0)->6, 月(1)->0 ...
 
             for (let i = 0; i < 7; i++) {
                 let d = new Date(startOfWeek);
@@ -291,15 +297,8 @@
                 
                 card.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-
-                    if (selectedDateStr === dateStr) {
-                        selectedDateStr = null;
-                        openModal(dateStr);
-                    } else {
-                        selectedDateStr = dateStr;
-                        renderWeekView();
-                        renderMonthView();
-                    }
+                    selectedDateStr = dateStr;
+                    openModal(dateStr);
                 };
 
                 let todayBadge = isToday ? '<span class="text-[8px] text-red-600 font-bold bg-red-50 px-1 rounded border border-red-200 mt-0.5">本日</span>' : '';
@@ -321,16 +320,21 @@
                         ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
                         : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
 
-                    let memoHtml = item?.memo ? `<div class="w-20 shrink-0 text-[10px] text-gray-500 truncate px-1">${item.memo}</div>` : '<div class="w-20 shrink-0"></div>';
+                    // 予定を通常文字サイズ（太字解除）、最大2行で省略するクラス適用
+                    let planHtml = item?.plan 
+                        ? `<span class="flex-1 text-gray-800 text-xs line-clamp-2 px-1 min-w-0">${item.plan}</span>` 
+                        : `<span class="flex-1 text-gray-300 text-xs px-1">-</span>`;
+
+                    // 編集ボタン列を削除し、その分メモ欄を広く確保
+                    let memoHtml = item?.memo ? `<div class="flex-1 text-[10px] text-gray-500 line-clamp-2 px-1 text-right">${item.memo}</div>` : '<div class="flex-1"></div>';
 
                     rowsHtml += `
                         <div class="flex items-center justify-between min-w-0">
                             <div class="w-5 shrink-0">${nameBadge}</div>
-                            <span class="flex-1 truncate px-1.5 font-bold text-gray-800 text-xs min-w-0">${item ? item.plan : '-'}</span>
+                            ${planHtml}
                             <span class="w-12 shrink-0 text-right text-gray-600 text-[11px]">${item ? item.time : '-'}</span>
                             <span class="w-16 shrink-0 text-center text-gray-600 text-[10px]">${mealText}</span>
                             ${memoHtml}
-                            <button onclick="openModalForPerson('${dateStr}', '${person}')" class="w-6 shrink-0 text-xs text-gray-400 hover:text-black text-center">✏</button>
                         </div>
                     `;
                 });
@@ -354,7 +358,7 @@
             }
         }
 
-        // --- 月表示（上下半分にレイアウト・線なし・あふれ時は「...」省略対応） ---
+        // --- 月表示（バランス均等、余白・コロン修正、複数行あふれは「...」省略対応） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -385,50 +389,42 @@
                 let isSelected = (selectedDateStr === dateStr);
                 let bgClass = isSelected ? 'glow-highlight bg-blue-50/50' : 'bg-white hover:bg-gray-50';
 
-                // h-24 の高さを上下半分（flex-1ずつ）に均等分割。線は引かない
-                cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
+                // 各日セル：パディングを最小限に詰めてすっきり配置
+                cell.className = `p-0.5 pt-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
                 
                 cell.onclick = () => {
-                    if (selectedDateStr === dateStr) {
-                        selectedDateStr = null;
-                        openModal(dateStr);
-                    } else {
-                        selectedDateStr = dateStr;
-                        renderMonthView();
-                        if(!document.getElementById('view-week').classList.contains('hidden')) {
-                            renderWeekView();
-                        }
-                    }
+                    selectedDateStr = dateStr;
+                    openModal(dateStr);
                 };
 
                 let todayBadge = isToday ? '<span class="text-[9px] text-red-600 font-bold ml-1">本日</span>' : '';
                 
                 // 日付ヘッダー部分
-                let headerHtml = `<div class="text-[10px] font-bold text-gray-700 pb-0.5 flex justify-between items-center shrink-0"><span>${day}</span>${todayBadge}</div>`;
+                let headerHtml = `<div class="text-[10px] font-bold text-gray-700 px-0.5 pb-0.5 flex justify-between items-center shrink-0"><span>${day}</span>${todayBadge}</div>`;
 
-                // 2人分の予定エリア（上下半分に均等割り：flex-1）
+                // 2人分の予定エリア：「あ」と「ち」の領域を完全に均等に割り当て（flex-1）
                 let persons = ['あきた', 'ちーた'];
-                let rowsHtml = '<div class="flex-1 flex flex-col justify-around overflow-hidden space-y-0.5">';
+                let rowsHtml = '<div class="flex-1 flex flex-col justify-between overflow-hidden space-y-0.5 px-0.5 pb-0.5">';
                 
                 persons.forEach(person => {
                     let s = daySchedules.find(item => item.person === person);
-                    let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold">あ:</span>' : '<span class="text-red-600 font-bold">ち:</span>';
+                    // コロンの後の不必要なスペースを完全に削除
+                    let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold shrink-0">あ:</span>' : '<span class="text-red-600 font-bold shrink-0">ち:</span>';
                     
                     if (s) {
                         let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        // 文字数が多くあふれる場合は truncate と flex で「...」省略
+                        // 文字数が多くはみ出る場合は最大2行で「...」省略
                         rowsHtml += `
-                            <div class="flex items-center text-[8.5px] leading-tight overflow-hidden min-h-0 flex-1">
-                                <span class="shrink-0 mr-0.5">${nameBadge}</span>
-                                <span class="truncate font-bold text-gray-800">${s.plan}</span>
-                                <span class="shrink-0 text-gray-500 ml-1">${s.time} (${mealStr})</span>
+                            <div class="flex items-start text-[8.5px] leading-tight overflow-hidden min-h-0 flex-1">
+                                ${nameBadge}
+                                <span class="line-clamp-2 text-gray-800 ml-0.5">${s.plan} ${s.time} (${mealStr})</span>
                             </div>
                         `;
                     } else {
                         rowsHtml += `
                             <div class="flex items-center text-[8.5px] leading-tight text-gray-300 flex-1">
-                                <span class="shrink-0 mr-0.5">${nameBadge}</span>
-                                <span>-</span>
+                                ${nameBadge}
+                                <span class="ml-0.5">-</span>
                             </div>
                         `;
                     }
@@ -454,10 +450,6 @@
             if(!document.getElementById('view-week').classList.contains('hidden')) {
                 renderWeekView();
             }
-        }
-
-        function openModalForPerson(dateStr, person) {
-            openModal(dateStr, person);
         }
 
         function onPersonChange() {
