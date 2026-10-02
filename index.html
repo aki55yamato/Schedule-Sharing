@@ -12,17 +12,14 @@
     <!-- ヘッダー -->
     <header class="bg-gray-800 text-white p-2 shadow-sm sticky top-0 z-40 flex justify-between items-center">
         <h1 class="text-xs font-bold">📅 ふたりの予定ボード</h1>
-        <div class="relative">
-            <button onclick="document.getElementById('month-picker').showPicker()" id="current-month-label" class="text-[10px] bg-gray-700 px-2 py-1 rounded font-bold cursor-pointer hover:bg-gray-600">2026年10月 ▼</button>
-            <input type="month" id="month-picker" class="absolute opacity-0 pointer-events-none" onchange="changeMonthByPicker(this.value)">
-        </div>
+        <span id="current-month-label" class="text-[10px] bg-gray-700 px-2 py-1 rounded font-bold">2026年10月</span>
     </header>
 
     <!-- メインコンテンツ -->
     <main class="max-w-md mx-auto p-1.5 space-y-2">
 
         <!-- ① 週表示ビュー -->
-        <div id="view-week" class="space-y-1.5">
+        <div id="view-week" class="space-y-1.5 hidden">
             <div class="flex justify-between items-center bg-gray-100 p-2 rounded text-xs font-bold">
                 <button onclick="changeWeek(-1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">◀ 前の週</button>
                 <span id="week-range-label">10/5(月) 〜 10/11(日)</span>
@@ -35,7 +32,7 @@
         </div>
 
         <!-- ② 月表示カレンダービュー -->
-        <div id="view-month" class="space-y-2 hidden">
+        <div id="view-month" class="space-y-2">
             <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold">
                 <button onclick="changeMonth(-1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">◀ 前月</button>
                 <span id="month-title-label">2026年 10月</span>
@@ -53,69 +50,69 @@
         </div>
 
         <!-- ③ 予定登録ビュー -->
-        <div id="view-input" class="bg-white border p-3 rounded space-y-2.5 hidden">
-            <h2 class="text-xs font-bold text-gray-800 border-b pb-1">予定の新規登録・編集</h2>
+        <div id="view-input" class="bg-white border p-4 rounded space-y-3.5 hidden">
+            <h2 class="text-xs font-bold text-gray-800 border-b pb-1.5">予定の新規登録・編集</h2>
             <input type="hidden" id="edit-id" value="">
             
-            <div>
-                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">誰の予定？</label>
-                <select id="input-person" class="w-full border rounded p-1.5 text-xs bg-white font-bold">
+            <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-gray-600">誰の予定？</label>
+                <select id="input-person" class="w-full border rounded p-2 text-xs bg-white font-bold">
                     <option value="あきた">あきた</option>
                     <option value="ちーた">ちーた</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">日付</label>
-                <input type="date" id="input-date" class="w-full border rounded p-1.5 text-xs">
+            <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-gray-600">日付</label>
+                <input type="date" id="input-date" class="w-full border rounded p-2 text-xs">
             </div>
-            <div>
-                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">予定</label>
-                <input type="text" id="input-plan" placeholder="例：出社、在宅、英検" class="w-full border rounded p-1.5 text-xs">
+            <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-gray-600">予定</label>
+                <input type="text" id="input-plan" placeholder="例：出社、在宅、英検" class="w-full border rounded p-2 text-xs">
             </div>
-            <div>
-                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">帰宅時刻</label>
-                <input type="text" id="input-time" placeholder="例：19:00、自宅" class="w-full border rounded p-1.5 text-xs">
+            <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-gray-600">帰宅時刻</label>
+                <input type="text" id="input-time" placeholder="例：19:00、自宅" class="w-full border rounded p-2 text-xs">
             </div>
             <div class="grid grid-cols-2 gap-2" id="meal-input-container">
-                <div id="lunch-input-wrap" class="hidden">
-                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">昼食要否</label>
-                    <select id="input-lunch" class="w-full border rounded p-1.5 text-xs bg-white">
+                <div id="lunch-input-wrap" class="hidden space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-600">昼食要否</label>
+                    <select id="input-lunch" class="w-full border rounded p-2 text-xs bg-white">
                         <option value="○">○ (食べる)</option>
                         <option value="✕">✕ (いらない)</option>
                         <option value="△">△ (未定)</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">夕飯要否</label>
-                    <select id="input-dinner" class="w-full border rounded p-1.5 text-xs bg-white">
+                <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-600">夕飯要否</label>
+                    <select id="input-dinner" class="w-full border rounded p-2 text-xs bg-white">
                         <option value="○">○ (食べる)</option>
                         <option value="✕">✕ (いらない)</option>
                         <option value="△">△ (未定)</option>
                     </select>
                 </div>
             </div>
-            <div>
-                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">備考欄 (メモ)</label>
-                <textarea id="input-memo" rows="2" placeholder="メモ" class="w-full border rounded p-1.5 text-xs"></textarea>
+            <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-gray-600">備考欄 (メモ)</label>
+                <textarea id="input-memo" rows="2" placeholder="メモ" class="w-full border rounded p-2 text-xs"></textarea>
             </div>
 
-            <div class="flex space-x-2 pt-1">
+            <div class="flex space-x-2 pt-2">
                 <button type="button" onclick="saveSchedule()" class="flex-1 bg-gray-800 text-white font-bold py-2 rounded text-xs">保存する</button>
-                <button type="button" onclick="switchView('week')" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded text-xs">キャンセル</button>
+                <button type="button" onclick="switchView('month')" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded text-xs">キャンセル</button>
             </div>
         </div>
 
     </main>
 
-    <!-- 下部固定タブナビゲーション -->
+    <!-- 下部固定タブナビゲーション（月と週を入れ替え） -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-1.5 z-50">
-        <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
-            <span class="text-sm">📅</span>
-            <span class="text-[10px]">週表示</span>
-        </button>
-        <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
+        <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
             <span class="text-sm">🗓️</span>
             <span class="text-[10px]">月表示</span>
+        </button>
+        <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
+            <span class="text-sm">📅</span>
+            <span class="text-[10px]">週表示</span>
         </button>
         <button onclick="switchView('input')" id="btn-input" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
             <span class="text-sm">➕</span>
@@ -199,7 +196,6 @@
             }
         }
 
-        // --- 週表示（120%の縦幅・あ/ちのカラー指定） ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -214,7 +210,7 @@
 
             document.getElementById('week-range-label').innerText = 
                 `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
-            document.getElementById('current-month-label').innerText = `${targetDate.getFullYear()}年${targetDate.getMonth()+1}月 ▼`;
+            document.getElementById('current-month-label').innerText = `${targetDate.getFullYear()}年${targetDate.getMonth()+1}月`;
 
             const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -249,7 +245,6 @@
                     let item = daySchedules.find(s => s.person === person);
                     let mealText = offDay ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
                     
-                    // あきたは青字の「あ」、ちーたは赤字の「ち」
                     let nameBadge = person === 'あきた' 
                         ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
                         : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
@@ -279,23 +274,13 @@
 
         function changeMonth(direction) {
             targetDate.setMonth(targetDate.getMonth() + direction);
-            renderWeekView();
-            if(!document.getElementById('view-month').classList.contains('hidden')) {
-                renderMonthView();
+            renderMonthView();
+            if(!document.getElementById('view-week').classList.contains('hidden')) {
+                renderWeekView();
             }
         }
 
-        function changeMonthByPicker(value) {
-            if(!value) return;
-            let parts = value.split('-');
-            targetDate.setFullYear(parseInt(parts[0]));
-            targetDate.setMonth(parseInt(parts[1]) - 1);
-            targetDate.setDate(1);
-            renderWeekView();
-            renderMonthView();
-        }
-
-        // --- 月表示（自動折り返し・各人スペース確保） ---
+        // --- 月表示（日付・テキストの文字サイズを拡大） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -304,7 +289,7 @@
             let month = targetDate.getMonth();
 
             document.getElementById('month-title-label').innerText = `${year}年 ${month + 1}月`;
-            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月 ▼`;
+            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月`;
 
             let firstDay = new Date(year, month, 1).getDay();
             let firstDayIndex = (firstDay === 0) ? 6 : firstDay - 1;
@@ -323,7 +308,7 @@
                 let offDay = isOffDay(d);
 
                 let cell = document.createElement('div');
-                cell.className = `p-0.5 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
+                cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
                 cell.onclick = () => {
                     document.getElementById('edit-id').value = '';
                     document.getElementById('input-date').value = dateStr;
@@ -334,15 +319,16 @@
                     switchView('input');
                 };
 
-                let contents = `<div class="text-[9px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 overflow-y-auto flex-1 mt-0.5">`;
+                // 日付の文字サイズを少し大きく（10px）
+                let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 overflow-y-auto flex-1 mt-0.5">`;
                 
                 ['あきた', 'ちーた'].forEach(person => {
                     let s = daySchedules.find(item => item.person === person);
                     if (s) {
                         let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold">あ:</span>' : '<span class="text-red-600 font-bold">ち:</span>';
                         let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        // 各人のスペース内で自然に改行されるようブロック要素として構築
-                        contents += `<div class="text-[7px] leading-tight break-words">${nameBadge}${s.plan} ${s.time} (${mealStr})</div>`;
+                        // テキストの文字サイズを少し大きく（8.5px）
+                        contents += `<div class="text-[8.5px] leading-tight break-words">${nameBadge}${s.plan} ${s.time} (${mealStr})</div>`;
                     }
                 });
 
@@ -406,10 +392,10 @@
                 }
             }
 
-            switchView('week');
+            switchView('month');
         }
 
-        renderWeekView();
+        renderMonthView();
     </script>
 </body>
 </html>
