@@ -3,27 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>予定共有アプリ</title>
+    <title>ふたり専用 予定共有ボード</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 pb-20">
+<body class="bg-gray-50 text-gray-800 pb-24"> <!-- 下部固定タブの分だけ余白を確保 -->
 
     <!-- ヘッダー -->
     <header class="bg-blue-600 text-white p-3 shadow-md sticky top-0 z-40 flex justify-between items-center">
-        <h1 class="text-sm font-bold">📅 予定共有ボード</h1>
+        <h1 class="text-sm font-bold">📅 ふたりの予定ボード</h1>
         <span id="current-month-label" class="text-xs bg-blue-700 px-2 py-1 rounded">2026年10月</span>
     </header>
 
     <!-- メインコンテンツ -->
     <main class="max-w-md mx-auto p-3 space-y-4">
-
-        <!-- ビュー切り替えタブ -->
-        <div class="flex bg-gray-200 p-1 rounded-xl text-xs font-bold">
-            <button onclick="switchView('week')" id="btn-week" class="flex-1 py-1.5 rounded-lg bg-white shadow text-blue-600 transition">週表示</button>
-            <button onclick="switchView('month')" id="btn-month" class="flex-1 py-1.5 rounded-lg text-gray-500 transition">月表示カレンダー</button>
-            <button onclick="switchView('input')" id="btn-input" class="flex-1 py-1.5 rounded-lg text-gray-500 transition">予定登録</button>
-        </div>
 
         <!-- ① 週表示ビュー -->
         <div id="view-week" class="space-y-3">
@@ -33,7 +26,7 @@
                 <button onclick="changeWeek(1)" class="px-2 py-1 bg-gray-100 rounded">次の週 ▶</button>
             </div>
 
-            <!-- 週ごとの横スクロールまたはカードリスト -->
+            <!-- 2人分を比較できる週ごとのリスト -->
             <div id="week-card-container" class="space-y-3">
                 <!-- JavaScriptで動的生成 -->
             </div>
@@ -57,11 +50,18 @@
             </div>
         </div>
 
-        <!-- ③ 予定登録/編集ビュー -->
+        <!-- ③ 予定登録ビュー -->
         <div id="view-input" class="bg-white p-4 rounded-xl shadow-sm space-y-3 hidden">
             <h2 class="text-xs font-bold text-blue-600 border-b pb-1">予定の新規登録・編集</h2>
             <input type="hidden" id="edit-id" value="">
             
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">誰の予定？</label>
+                <select id="input-person" class="w-full border rounded-lg p-2 text-xs bg-white font-bold text-blue-600">
+                    <option value="あきた">あきた</option>
+                    <option value="ちーた">ちーた</option>
+                </select>
+            </div>
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 mb-1">日付</label>
                 <input type="date" id="input-date" class="w-full border rounded-lg p-2 text-xs">
@@ -95,44 +95,59 @@
 
     </main>
 
+    <!-- 下部固定タブナビゲーション -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex justify-around p-2 z-50">
+        <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-blue-600 font-bold transition">
+            <span class="text-base">📅</span>
+            <span class="text-[10px]">週表示</span>
+        </button>
+        <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
+            <span class="text-base">🗓️</span>
+            <span class="text-[10px]">月表示</span>
+        </button>
+        <button onclick="switchView('input')" id="btn-input" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
+            <span class="text-base">➕</span>
+            <span class="text-[10px]">予定追加</span>
+        </button>
+    </nav>
+
     <!-- スクリプト：動作ロジック -->
     <script>
-        // サンプルデータ（お手元の画像やシートの雰囲気を再現）
+        // サンプルデータ（あきた・ちーたの2人分のデータ構造）
         let schedules = [
-            { id: '1', date: '2026-10-01', plan: '出社', time: '19:00', dinner: '○', memo: '仕事が長引くかも。' },
-            { id: '2', date: '2026-10-02', plan: '出社→飲み会', time: '23:00', dinner: '✕', memo: 'Podcastの収録でお弁当食べる。' },
-            { id: '3', date: '2026-10-03', plan: '外出', time: '17時帰宅', dinner: '○', memo: '10:00出発→帰宅' },
-            { id: '4', date: '2026-10-04', plan: '家庭教師', time: '21:00頃', dinner: '○', memo: '16:00出発' }
+            { id: '1', person: 'あきた', date: '2026-10-02', plan: '出社', time: '19:00', dinner: '○', memo: '仕事が長引くかも。' },
+            { id: '2', person: 'ちーた', date: '2026-10-02', plan: '在宅', time: '自宅', dinner: '○', memo: '味噌汁、サラダ' },
+            { id: '3', person: 'あきた', date: '2026-10-03', plan: '外出', time: '17時帰宅', dinner: '○', memo: '10:00出発' }
         ];
 
-        let currentView = 'week';
-        let targetDate = new Date('2026-10-02'); // 基準日
+        let targetDate = new Date('2026-10-02');
 
-        // タブ切り替え
+        // タブ切り替え処理
         function switchView(view) {
-            currentView = view;
             ['week', 'month', 'input'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
-                document.getElementById(`btn-${v}`).classList.remove('bg-white', 'shadow', 'text-blue-600');
-                document.getElementById(`btn-${v}`).classList.add('text-gray-500');
+                let btn = document.getElementById(`btn-${v}`);
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-gray-400');
             });
             document.getElementById(`view-${view}`).classList.remove('hidden');
-            document.getElementById(`btn-${view}`).classList.add('bg-white', 'shadow', 'text-blue-600');
-            document.getElementById(`btn-${view}`).classList.remove('text-gray-500');
+            let activeBtn = document.getElementById(`btn-${view}`);
+            activeBtn.classList.remove('text-gray-400');
+            activeBtn.classList.add('text-blue-600');
 
             if (view === 'week') renderWeekView();
             if (view === 'month') renderMonthView();
             if (view === 'input' && !document.getElementById('edit-id').value) {
                 document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
             }
+            window.scrollTo(0, 0);
         }
 
-        // 週表示の描画
+        // 週表示の描画（2人分を並べて比較できるようにする）
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
 
-            // 基準日からその週の日曜日を算出
             let startOfWeek = new Date(targetDate);
             let day = startOfWeek.getDay();
             startOfWeek.setDate(startOfWeek.getDate() - day);
@@ -143,30 +158,48 @@
             document.getElementById('week-range-label').innerText = 
                 `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
 
-            // 1週間分（日〜土）のカードを作成
             for (let i = 0; i < 7; i++) {
                 let d = new Date(startOfWeek);
                 d.setDate(d.getDate() + i);
                 let dateStr = d.toISOString().split('T')[0];
-                let item = schedules.find(s => s.date === dateStr) || { plan: '-', time: '-', dinner: '-', memo: '' };
 
                 let dayName = ['日', '月', '火', '水', '木', '金', '土'][i];
                 let isWeekend = (i === 0 || i === 6);
 
+                // その日の2人分のデータを取得
+                let daySchedules = schedules.filter(s => s.date === dateStr);
+
                 let card = document.createElement('div');
                 card.className = `bg-white rounded-xl p-3 shadow-sm border-l-4 ${isWeekend ? 'border-red-400' : 'border-blue-500'}`;
+                
+                let schedulesHtml = '';
+                ['あきた', 'ちーた'].forEach(person => {
+                    let item = daySchedules.find(s => s.person === person);
+                    schedulesHtml += `
+                        <div class="bg-gray-50 p-2 rounded-lg mb-1 last:mb-0 border border-gray-100">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${person === 'あきた' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}">${person}</span>
+                                <button onclick="editScheduleByDateAndPerson('${dateStr}', '${person}')" class="text-[10px] text-gray-500 hover:text-blue-600">✏️ 編集</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 text-[11px]">
+                                <div><span class="text-gray-400 text-[9px] block">予定</span><span class="font-bold">${item ? item.plan : '-'}</span></div>
+                                <div><span class="text-gray-400 text-[9px] block">帰宅</span><span>${item ? item.time : '-'}</span></div>
+                                <div><span class="text-gray-400 text-[9px] block">夕飯</span><span class="font-bold ${item && item.dinner === '○' ? 'text-blue-600' : 'text-red-500'}">${item ? item.dinner : '-'}</span></div>
+                            </div>
+                            ${item && item.memo ? `<div class="text-[10px] text-gray-500 mt-1 border-t pt-1">メモ: ${item.memo}</div>` : ''}
+                        </div>
+                    `;
+                });
+
                 card.innerHTML = `
                     <div class="flex justify-between items-center border-b pb-1 mb-2">
                         <span class="text-xs font-bold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-700'}">
                             ${d.getMonth()+1}月${d.getDate()}日 (${dayName})
                         </span>
-                        <button onclick="editScheduleByDate('${dateStr}')" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded text-gray-600">✏️ 編集</button>
+                        <button onclick="addNewForDate('${dateStr}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">+ 予定追加</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div><span class="text-gray-400 text-[10px] block">予定</span><span class="font-bold">${item.plan}</span></div>
-                        <div><span class="text-gray-400 text-[10px] block">帰宅時刻</span><span>${item.time}</span></div>
-                        <div><span class="text-gray-400 text-[10px] block">夕飯要否</span><span class="font-bold ${item.dinner === '○' ? 'text-blue-600' : 'text-red-500'}">${item.dinner}</span></div>
-                        <div><span class="text-gray-400 text-[10px] block">備考欄</span><span class="text-gray-600">${item.memo || 'なし'}</span></div>
+                    <div class="space-y-1">
+                        ${schedulesHtml}
                     </div>
                 `;
                 container.appendChild(card);
@@ -192,26 +225,25 @@
             let firstDayIndex = new Date(year, month, 1).getDay();
             let lastDay = new Date(year, month + 1, 0).getDate();
 
-            // 前月の余白
             for (let i = 0; i < firstDayIndex; i++) {
-                let emptyCell = document.createElement('div');
-                grid.appendChild(emptyCell);
+                grid.appendChild(document.createElement('div'));
             }
 
-            // 当月の日付
             for (let day = 1; day <= lastDay; day++) {
                 let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                let item = schedules.find(s => s.date === dateStr);
+                let daySchedules = schedules.filter(s => s.date === dateStr);
 
                 let cell = document.createElement('div');
-                cell.className = `p-1 border rounded-lg h-16 flex flex-col justify-between text-left cursor-pointer hover:bg-blue-50 transition ${item ? 'bg-blue-50/40 border-blue-200' : 'bg-white'}`;
-                cell.onclick = () => editScheduleByDate(dateStr);
+                cell.className = `p-1 border rounded-lg h-20 flex flex-col justify-between text-left cursor-pointer hover:bg-blue-50 transition bg-white`;
+                cell.onclick = () => addNewForDate(dateStr);
 
-                cell.innerHTML = `
-                    <div class="text-[10px] font-bold text-gray-700">${day}</div>
-                    <div class="text-[9px] truncate font-bold text-blue-600">${item ? item.plan : ''}</div>
-                    <div class="text-[8px] text-gray-500 truncate">夕飯:${item ? item.dinner : '-'}</div>
-                `;
+                let contents = `<div class="text-[10px] font-bold text-gray-700">${day}</div><div class="space-y-0.5 overflow-hidden">`;
+                daySchedules.forEach(s => {
+                    contents += `<div class="text-[9px] truncate bg-gray-50 rounded px-1"><span class="font-bold ${s.person === 'あきた' ? 'text-blue-600' : 'text-pink-600'}">${s.person[0]}:</span> ${s.plan}</div>`;
+                });
+                contents += `</div>`;
+                cell.innerHTML = contents;
+
                 grid.appendChild(cell);
             }
         }
@@ -222,9 +254,10 @@
         }
 
         // 編集画面を開く
-        function editScheduleByDate(dateStr) {
-            let item = schedules.find(s => s.date === dateStr);
+        function editScheduleByDateAndPerson(dateStr, person) {
+            let item = schedules.find(s => s.date === dateStr && s.person === person);
             document.getElementById('edit-id').value = item ? item.id : '';
+            document.getElementById('input-person').value = person;
             document.getElementById('input-date').value = dateStr;
             document.getElementById('input-plan').value = item ? item.plan : '';
             document.getElementById('input-time').value = item ? item.time : '';
@@ -234,9 +267,19 @@
             switchView('input');
         }
 
+        function addNewForDate(dateStr) {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('input-date').value = dateStr;
+            document.getElementById('input-plan').value = '';
+            document.getElementById('input-time').value = '';
+            document.getElementById('input-memo').value = '';
+            switchView('input');
+        }
+
         // 保存処理
         function saveSchedule() {
             let id = document.getElementById('edit-id').value;
+            let person = document.getElementById('input-person').value;
             let date = document.getElementById('input-date').value;
             let plan = document.getElementById('input-plan').value;
             let time = document.getElementById('input-time').value;
@@ -251,6 +294,7 @@
             if (id) {
                 let item = schedules.find(s => s.id === id);
                 if (item) {
+                    item.person = person;
                     item.date = date;
                     item.plan = plan;
                     item.time = time;
@@ -258,8 +302,14 @@
                     item.memo = memo;
                 }
             } else {
-                let newId = Date.now().toString();
-                schedules.push({ id: newId, date, plan, time, dinner, memo });
+                // 同じ人・同じ日の既存予定があれば上書き、なければ追加
+                let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
+                if (existingIndex !== -1) {
+                    schedules[existingIndex] = { id: schedules[existingIndex].id, person, date, plan, time, dinner, memo };
+                } else {
+                    let newId = Date.now().toString();
+                    schedules.push({ id: newId, person, date, plan, time, dinner, memo });
+                }
             }
 
             switchView('week');
