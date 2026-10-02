@@ -21,10 +21,17 @@
             position: relative;
             z-index: 10;
         }
-        /* 複数行のテキスト省略用クラス */
+        /* 複数行のテキスト省略用クラス（週用：最大2行） */
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        /* 複数行のテキスト省略用クラス（月用：最大3行） */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -147,10 +154,10 @@
         </div>
     </div>
 
-    <!-- モーダル：1週間一括入力用（高さ85%に調整） -->
+    <!-- モーダル：1週間一括入力用（高ささらに縮小：前回の80%に相当する約70vh） -->
     <div id="batch-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3">
-        <div class="bg-white border rounded space-y-3 w-full max-w-md shadow-xl flex flex-col max-h-[85vh] p-4">
-            <div class="flex justify-between items-center border-b pb-2 shrink-0">
+        <div class="bg-white border rounded space-y-2 w-full max-w-md shadow-xl flex flex-col max-h-[70vh] p-3">
+            <div class="flex justify-between items-center border-b pb-1.5 shrink-0">
                 <h2 class="text-xs font-bold text-gray-800">📝 1週間分の予定を一括入力</h2>
                 <select id="batch-person" class="border rounded p-1 text-xs bg-white font-bold text-blue-600">
                     <option value="あきた">あきた</option>
@@ -159,13 +166,13 @@
             </div>
 
             <!-- スクロール可能なフォーム領域 -->
-            <div id="batch-form-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+            <div id="batch-form-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
                 <!-- 動的生成 -->
             </div>
 
-            <div class="flex space-x-2 pt-2 border-t shrink-0">
-                <button type="button" onclick="saveBatchSchedules()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-xs">一括保存する</button>
-                <button type="button" onclick="closeBatchModal()" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded text-xs">キャンセル</button>
+            <div class="flex space-x-2 pt-1.5 border-t shrink-0">
+                <button type="button" onclick="saveBatchSchedules()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-1.5 rounded text-xs">一括保存する</button>
+                <button type="button" onclick="closeBatchModal()" class="bg-gray-200 text-gray-700 font-bold px-4 py-1.5 rounded text-xs">キャンセル</button>
             </div>
         </div>
     </div>
@@ -180,6 +187,7 @@
 
         let targetDate = new Date('2026-10-02');
         let selectedDateStr = null; 
+        let lastTapTime = 0; // ダブルタップ判定用
 
         // 操作時点での今日の日付文字列 (YYYY-MM-DD) を自動取得
         const todayStr = new Date().toISOString().split('T')[0];
@@ -253,6 +261,26 @@
             }
         }
 
+        // --- ダブルタップによるカードタップ処理 ---
+        function handleCardTap(dateStr) {
+            let currentTime = new Date().getTime();
+            let tapLength = currentTime - lastTapTime;
+
+            if (tapLength < 300 && tapLength > 0) {
+                // ダブルタップ検知：編集モーダルを開く
+                selectedDateStr = dateStr;
+                openModal(dateStr);
+            } else {
+                // 1回タップ：選択（ハイライト）のみ切り替え
+                selectedDateStr = (selectedDateStr === dateStr) ? null : dateStr;
+                renderMonthView();
+                if(!document.getElementById('view-week').classList.contains('hidden')) {
+                    renderWeekView();
+                }
+            }
+            lastTapTime = currentTime;
+        }
+
         // --- 週表示 ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
@@ -297,8 +325,7 @@
                 
                 card.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-                    selectedDateStr = dateStr;
-                    openModal(dateStr);
+                    handleCardTap(dateStr);
                 };
 
                 let todayBadge = isToday ? '<span class="text-[8px] text-red-600 font-bold bg-red-50 px-1 rounded border border-red-200 mt-0.5">本日</span>' : '';
@@ -320,12 +347,10 @@
                         ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
                         : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
 
-                    // 予定を通常文字サイズ（太字解除）、最大2行で省略するクラス適用
                     let planHtml = item?.plan 
                         ? `<span class="flex-1 text-gray-800 text-xs line-clamp-2 px-1 min-w-0">${item.plan}</span>` 
                         : `<span class="flex-1 text-gray-300 text-xs px-1">-</span>`;
 
-                    // 編集ボタン列を削除し、その分メモ欄を広く確保
                     let memoHtml = item?.memo ? `<div class="flex-1 text-[10px] text-gray-500 line-clamp-2 px-1 text-right">${item.memo}</div>` : '<div class="flex-1"></div>';
 
                     rowsHtml += `
@@ -358,7 +383,7 @@
             }
         }
 
-        // --- 月表示（バランス均等、余白・コロン修正、複数行あふれは「...」省略対応） ---
+        // --- 月表示（位置そのまま、上揃え・最大3行表示対応） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -389,40 +414,35 @@
                 let isSelected = (selectedDateStr === dateStr);
                 let bgClass = isSelected ? 'glow-highlight bg-blue-50/50' : 'bg-white hover:bg-gray-50';
 
-                // 各日セル：パディングを最小限に詰めてすっきり配置
                 cell.className = `p-0.5 pt-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
                 
                 cell.onclick = () => {
-                    selectedDateStr = dateStr;
-                    openModal(dateStr);
+                    handleCardTap(dateStr);
                 };
 
                 let todayBadge = isToday ? '<span class="text-[9px] text-red-600 font-bold ml-1">本日</span>' : '';
                 
-                // 日付ヘッダー部分
                 let headerHtml = `<div class="text-[10px] font-bold text-gray-700 px-0.5 pb-0.5 flex justify-between items-center shrink-0"><span>${day}</span>${todayBadge}</div>`;
 
-                // 2人分の予定エリア：「あ」と「ち」の領域を完全に均等に割り当て（flex-1）
+                // 「あ」と「ち」のエリア：位置そのまま、上揃え（items-start）にしつつ最大3行表示を許可
                 let persons = ['あきた', 'ちーた'];
                 let rowsHtml = '<div class="flex-1 flex flex-col justify-between overflow-hidden space-y-0.5 px-0.5 pb-0.5">';
                 
                 persons.forEach(person => {
                     let s = daySchedules.find(item => item.person === person);
-                    // コロンの後の不必要なスペースを完全に削除
                     let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold shrink-0">あ:</span>' : '<span class="text-red-600 font-bold shrink-0">ち:</span>';
                     
                     if (s) {
                         let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        // 文字数が多くはみ出る場合は最大2行で「...」省略
                         rowsHtml += `
                             <div class="flex items-start text-[8.5px] leading-tight overflow-hidden min-h-0 flex-1">
                                 ${nameBadge}
-                                <span class="line-clamp-2 text-gray-800 ml-0.5">${s.plan} ${s.time} (${mealStr})</span>
+                                <span class="line-clamp-3 text-gray-800 ml-0.5">${s.plan} ${s.time} (${mealStr})</span>
                             </div>
                         `;
                     } else {
                         rowsHtml += `
-                            <div class="flex items-center text-[8.5px] leading-tight text-gray-300 flex-1">
+                            <div class="flex items-start text-[8.5px] leading-tight text-gray-300 flex-1">
                                 ${nameBadge}
                                 <span class="ml-0.5">-</span>
                             </div>
@@ -541,15 +561,15 @@
                 let existing = schedules.find(s => s.date === dateStr && s.person === currentPerson);
 
                 let card = document.createElement('div');
-                card.className = "border rounded p-2 bg-gray-50 space-y-2 batch-row";
+                card.className = "border rounded p-1.5 bg-gray-50 space-y-1.5 batch-row";
                 card.dataset.date = dateStr;
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold text-gray-700 border-b pb-1">
+                    <div class="flex justify-between items-center font-bold text-gray-700 border-b pb-0.5">
                         <span>${d.getMonth()+1}/${d.getDate()} (${dayNames[i]})</span>
-                        <span class="text-[10px] text-gray-500">${offDay ? '休日(昼夕あり)' : '平日(夕のみ)'}</span>
+                        <span class="text-[9px] text-gray-500">${offDay ? '休日' : '平日'}</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-1.5">
                         <div>
                             <label class="text-[9px] font-bold text-gray-500">予定</label>
                             <input type="text" class="batch-plan w-full border rounded p-1 text-xs bg-white" placeholder="出社、在宅など" value="${existing ? existing.plan : ''}">
@@ -559,7 +579,7 @@
                             <input type="text" class="batch-time w-full border rounded p-1 text-xs bg-white" placeholder="19:00等" value="${existing ? existing.time : ''}">
                         </div>
                     </div>
-                    <div class="grid ${offDay ? 'grid-cols-2' : 'grid-cols-1'} gap-2">
+                    <div class="grid ${offDay ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5">
                         ${offDay ? `
                         <div>
                             <label class="text-[9px] font-bold text-gray-500">昼食</label>
