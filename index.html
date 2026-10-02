@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予定共有アプリ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-600 text-white p-3 shadow-md sticky top-0 z-40 flex justify-between items-center">
+        <h1 class="text-sm font-bold">📅 予定共有ボード</h1>
+        <span id="current-month-label" class="text-xs bg-blue-700 px-2 py-1 rounded">2026年10月</span>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-md mx-auto p-3 space-y-4">
+
+        <!-- ビュー切り替えタブ -->
+        <div class="flex bg-gray-200 p-1 rounded-xl text-xs font-bold">
+            <button onclick="switchView('week')" id="btn-week" class="flex-1 py-1.5 rounded-lg bg-white shadow text-blue-600 transition">週表示</button>
+            <button onclick="switchView('month')" id="btn-month" class="flex-1 py-1.5 rounded-lg text-gray-500 transition">月表示カレンダー</button>
+            <button onclick="switchView('input')" id="btn-input" class="flex-1 py-1.5 rounded-lg text-gray-500 transition">予定登録</button>
+        </div>
+
+        <!-- ① 週表示ビュー -->
+        <div id="view-week" class="space-y-3">
+            <div class="flex justify-between items-center bg-white p-2 rounded-lg shadow-sm text-xs font-bold">
+                <button onclick="changeWeek(-1)" class="px-2 py-1 bg-gray-100 rounded">◀ 前の週</button>
+                <span id="week-range-label">10/4(日) 〜 10/10(土)</span>
+                <button onclick="changeWeek(1)" class="px-2 py-1 bg-gray-100 rounded">次の週 ▶</button>
+            </div>
+
+            <!-- 週ごとの横スクロールまたはカードリスト -->
+            <div id="week-card-container" class="space-y-3">
+                <!-- JavaScriptで動的生成 -->
+            </div>
+        </div>
+
+        <!-- ② 月表示カレンダービュー -->
+        <div id="view-month" class="space-y-3 hidden">
+            <div class="flex justify-between items-center bg-white p-2 rounded-lg shadow-sm text-xs font-bold">
+                <button onclick="changeMonth(-1)" class="px-2 py-1 bg-gray-100 rounded">◀ 前月</button>
+                <span id="month-title-label">2026年 10月</span>
+                <button onclick="changeMonth(1)" class="px-2 py-1 bg-gray-100 rounded">翌月 ▶</button>
+            </div>
+            <!-- カレンダーグリッド -->
+            <div class="bg-white rounded-xl shadow-sm p-2">
+                <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-2">
+                    <span class="text-red-500">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-500">土</span>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs">
+                    <!-- JavaScriptで動的生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ③ 予定登録/編集ビュー -->
+        <div id="view-input" class="bg-white p-4 rounded-xl shadow-sm space-y-3 hidden">
+            <h2 class="text-xs font-bold text-blue-600 border-b pb-1">予定の新規登録・編集</h2>
+            <input type="hidden" id="edit-id" value="">
+            
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">日付</label>
+                <input type="date" id="input-date" class="w-full border rounded-lg p-2 text-xs">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">予定</label>
+                <input type="text" id="input-plan" placeholder="例：出社、在宅、英検、飲み会" class="w-full border rounded-lg p-2 text-xs">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">帰宅時刻</label>
+                <input type="text" id="input-time" placeholder="例：19:00、自宅、遅め" class="w-full border rounded-lg p-2 text-xs">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">夕飯の要否</label>
+                <select id="input-dinner" class="w-full border rounded-lg p-2 text-xs bg-white">
+                    <option value="○">○ (家で食べる)</option>
+                    <option value="✕">✕ (いらない/外食)</option>
+                    <option value="△">△ (未定/遅め)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-600 mb-1">備考欄 (メモ)</label>
+                <textarea id="input-memo" rows="2" placeholder="例：タコスサラダ、ジム寄る" class="w-full border rounded-lg p-2 text-xs"></textarea>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button type="button" onclick="saveSchedule()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg text-xs shadow">保存する</button>
+                <button type="button" onclick="switchView('week')" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-lg text-xs">キャンセル</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- スクリプト：動作ロジック -->
+    <script>
+        // サンプルデータ（お手元の画像やシートの雰囲気を再現）
+        let schedules = [
+            { id: '1', date: '2026-10-01', plan: '出社', time: '19:00', dinner: '○', memo: '仕事が長引くかも。' },
+            { id: '2', date: '2026-10-02', plan: '出社→飲み会', time: '23:00', dinner: '✕', memo: 'Podcastの収録でお弁当食べる。' },
+            { id: '3', date: '2026-10-03', plan: '外出', time: '17時帰宅', dinner: '○', memo: '10:00出発→帰宅' },
+            { id: '4', date: '2026-10-04', plan: '家庭教師', time: '21:00頃', dinner: '○', memo: '16:00出発' }
+        ];
+
+        let currentView = 'week';
+        let targetDate = new Date('2026-10-02'); // 基準日
+
+        // タブ切り替え
+        function switchView(view) {
+            currentView = view;
+            ['week', 'month', 'input'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`btn-${v}`).classList.remove('bg-white', 'shadow', 'text-blue-600');
+                document.getElementById(`btn-${v}`).classList.add('text-gray-500');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`btn-${view}`).classList.add('bg-white', 'shadow', 'text-blue-600');
+            document.getElementById(`btn-${view}`).classList.remove('text-gray-500');
+
+            if (view === 'week') renderWeekView();
+            if (view === 'month') renderMonthView();
+            if (view === 'input' && !document.getElementById('edit-id').value) {
+                document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+            }
+        }
+
+        // 週表示の描画
+        function renderWeekView() {
+            const container = document.getElementById('week-card-container');
+            container.innerHTML = '';
+
+            // 基準日からその週の日曜日を算出
+            let startOfWeek = new Date(targetDate);
+            let day = startOfWeek.getDay();
+            startOfWeek.setDate(startOfWeek.getDate() - day);
+
+            let endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+            document.getElementById('week-range-label').innerText = 
+                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
+
+            // 1週間分（日〜土）のカードを作成
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(startOfWeek);
+                d.setDate(d.getDate() + i);
+                let dateStr = d.toISOString().split('T')[0];
+                let item = schedules.find(s => s.date === dateStr) || { plan: '-', time: '-', dinner: '-', memo: '' };
+
+                let dayName = ['日', '月', '火', '水', '木', '金', '土'][i];
+                let isWeekend = (i === 0 || i === 6);
+
+                let card = document.createElement('div');
+                card.className = `bg-white rounded-xl p-3 shadow-sm border-l-4 ${isWeekend ? 'border-red-400' : 'border-blue-500'}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b pb-1 mb-2">
+                        <span class="text-xs font-bold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-700'}">
+                            ${d.getMonth()+1}月${d.getDate()}日 (${dayName})
+                        </span>
+                        <button onclick="editScheduleByDate('${dateStr}')" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded text-gray-600">✏️ 編集</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-gray-400 text-[10px] block">予定</span><span class="font-bold">${item.plan}</span></div>
+                        <div><span class="text-gray-400 text-[10px] block">帰宅時刻</span><span>${item.time}</span></div>
+                        <div><span class="text-gray-400 text-[10px] block">夕飯要否</span><span class="font-bold ${item.dinner === '○' ? 'text-blue-600' : 'text-red-500'}">${item.dinner}</span></div>
+                        <div><span class="text-gray-400 text-[10px] block">備考欄</span><span class="text-gray-600">${item.memo || 'なし'}</span></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function changeWeek(direction) {
+            targetDate.setDate(targetDate.getDate() + (direction * 7));
+            renderWeekView();
+        }
+
+        // 月表示カレンダーの描画
+        function renderMonthView() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            let year = targetDate.getFullYear();
+            let month = targetDate.getMonth();
+
+            document.getElementById('month-title-label').innerText = `${year}年 ${month + 1}月`;
+            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月`;
+
+            let firstDayIndex = new Date(year, month, 1).getDay();
+            let lastDay = new Date(year, month + 1, 0).getDate();
+
+            // 前月の余白
+            for (let i = 0; i < firstDayIndex; i++) {
+                let emptyCell = document.createElement('div');
+                grid.appendChild(emptyCell);
+            }
+
+            // 当月の日付
+            for (let day = 1; day <= lastDay; day++) {
+                let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let item = schedules.find(s => s.date === dateStr);
+
+                let cell = document.createElement('div');
+                cell.className = `p-1 border rounded-lg h-16 flex flex-col justify-between text-left cursor-pointer hover:bg-blue-50 transition ${item ? 'bg-blue-50/40 border-blue-200' : 'bg-white'}`;
+                cell.onclick = () => editScheduleByDate(dateStr);
+
+                cell.innerHTML = `
+                    <div class="text-[10px] font-bold text-gray-700">${day}</div>
+                    <div class="text-[9px] truncate font-bold text-blue-600">${item ? item.plan : ''}</div>
+                    <div class="text-[8px] text-gray-500 truncate">夕飯:${item ? item.dinner : '-'}</div>
+                `;
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeMonth(direction) {
+            targetDate.setMonth(targetDate.getMonth() + direction);
+            renderMonthView();
+        }
+
+        // 編集画面を開く
+        function editScheduleByDate(dateStr) {
+            let item = schedules.find(s => s.date === dateStr);
+            document.getElementById('edit-id').value = item ? item.id : '';
+            document.getElementById('input-date').value = dateStr;
+            document.getElementById('input-plan').value = item ? item.plan : '';
+            document.getElementById('input-time').value = item ? item.time : '';
+            document.getElementById('input-dinner').value = item ? item.dinner : '○';
+            document.getElementById('input-memo').value = item ? item.memo : '';
+
+            switchView('input');
+        }
+
+        // 保存処理
+        function saveSchedule() {
+            let id = document.getElementById('edit-id').value;
+            let date = document.getElementById('input-date').value;
+            let plan = document.getElementById('input-plan').value;
+            let time = document.getElementById('input-time').value;
+            let dinner = document.getElementById('input-dinner').value;
+            let memo = document.getElementById('input-memo').value;
+
+            if (!date || !plan) {
+                alert('日付と予定は必須です');
+                return;
+            }
+
+            if (id) {
+                let item = schedules.find(s => s.id === id);
+                if (item) {
+                    item.date = date;
+                    item.plan = plan;
+                    item.time = time;
+                    item.dinner = dinner;
+                    item.memo = memo;
+                }
+            } else {
+                let newId = Date.now().toString();
+                schedules.push({ id: newId, date, plan, time, dinner, memo });
+            }
+
+            switchView('week');
+        }
+
+        // 初期表示
+        renderWeekView();
+    </script>
+</body>
+</html>
