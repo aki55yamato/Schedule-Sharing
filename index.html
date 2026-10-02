@@ -35,9 +35,9 @@
                 <button onclick="changeWeek(1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">次の週 ▶</button>
             </div>
 
-            <!-- 週表示：余白を削りスクロールが発生しないように調整 -->
-            <div id="week-card-container" class="space-y-1 flex-1 overflow-hidden flex flex-col justify-between pr-0.5">
-                <!-- JavaScriptで動的生成 -->
+            <!-- 週表示：余白を最適化し、縦幅にぴったり合わせるコンテナ -->
+            <div id="week-card-container" class="flex-1 flex flex-col justify-between overflow-hidden space-y-1">
+                <!-- JavaScriptで動적生成 -->
             </div>
         </div>
 
@@ -199,7 +199,7 @@
             }
         }
 
-        // --- 週表示（余白を詰めてスクロールを完全排除） ---
+        // --- 週表示（余白を最小限に削り、縦幅一杯に綺麗にフィットさせる） ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -235,34 +235,34 @@
                 let offDay = isOffDay(d);
 
                 let card = document.createElement('div');
-                card.className = `bg-white border rounded p-1 text-xs flex items-stretch space-x-1 shrink-0`;
+                card.className = `bg-white border rounded px-1.5 py-1 text-xs flex items-stretch space-x-1.5 flex-1 min-h-0`;
                 
                 let dateCol = `
                     <div class="w-12 shrink-0 flex flex-col justify-center items-center bg-gray-50 border-r pr-1 text-center ${textColClass}">
-                        <span class="text-[10px] font-bold">${d.getMonth()+1}/${d.getDate()}</span>
+                        <span class="text-[11px] font-bold">${d.getMonth()+1}/${d.getDate()}</span>
                         <span class="text-[9px]">(${dayNames[i]})</span>
                     </div>
                 `;
 
-                let rowsHtml = '<div class="flex-1 space-y-0.5 min-w-0">';
+                let rowsHtml = '<div class="flex-1 flex flex-col justify-around min-w-0">';
                 ['あきた', 'ちーた'].forEach(person => {
                     let item = daySchedules.find(s => s.person === person);
                     let mealText = offDay ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
                     
                     let nameBadge = person === 'あきた' 
-                        ? '<span class="font-bold text-blue-600 bg-blue-50 px-0.5 py-0.2 rounded text-[9px] w-4 text-center inline-block">あ</span>' 
-                        : '<span class="font-bold text-red-600 bg-red-50 px-0.5 py-0.2 rounded text-[9px] w-4 text-center inline-block">ち</span>';
+                        ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
+                        : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
 
-                    let memoHtml = item?.memo ? `<div class="w-16 shrink-0 text-[9px] text-gray-500 px-0.5 line-clamp-2 leading-tight break-all">${item.memo}</div>` : '<div class="w-16 shrink-0"></div>';
+                    let memoHtml = item?.memo ? `<div class="w-20 shrink-0 text-[10px] text-gray-500 truncate px-1">${item.memo}</div>` : '<div class="w-20 shrink-0"></div>';
 
                     rowsHtml += `
-                        <div class="flex items-center justify-between py-0.2 border-b border-gray-100 last:border-none">
-                            <div class="w-4 shrink-0">${nameBadge}</div>
-                            <span class="flex-1 truncate px-1 font-bold text-gray-800 min-w-0">${item ? item.plan : '-'}</span>
-                            <span class="w-11 shrink-0 text-right text-gray-500">${item ? item.time : '-'}</span>
-                            <span class="w-15 shrink-0 text-center text-gray-600">${mealText}</span>
+                        <div class="flex items-center justify-between min-w-0">
+                            <div class="w-5 shrink-0">${nameBadge}</div>
+                            <span class="flex-1 truncate px-1.5 font-bold text-gray-800 text-xs min-w-0">${item ? item.plan : '-'}</span>
+                            <span class="w-12 shrink-0 text-right text-gray-600 text-[11px]">${item ? item.time : '-'}</span>
+                            <span class="w-16 shrink-0 text-center text-gray-600 text-[10px]">${mealText}</span>
                             ${memoHtml}
-                            <button onclick="openModalForPerson('${dateStr}', '${person}')" class="w-5 shrink-0 text-[11px] text-gray-400 hover:text-black text-center">✏️</button>
+                            <button onclick="openModalForPerson('${dateStr}', '${person}')" class="w-6 shrink-0 text-xs text-gray-400 hover:text-black text-center">✏️️</button>
                         </div>
                     `;
                 });
@@ -348,7 +348,7 @@
             }
         }
 
-        // --- モーダル制御（人物切り替え・データ保持の修正） ---
+        // --- モーダル制御（人物切り替え・データ保持） ---
         function openModal(dateStr, person = 'あきた') {
             updateMealInputVisibility(dateStr);
             document.getElementById('input-date').value = dateStr;
@@ -362,7 +362,6 @@
             openModal(dateStr, person);
         }
 
-        // 人物セレクトを変更した時に、その人の登録済みデータをフォームに反映する
         function onPersonChange() {
             let dateStr = document.getElementById('input-date').value;
             let person = document.getElementById('input-person').value;
@@ -406,7 +405,6 @@
             }
 
             if (id) {
-                // 既存のIDがある場合はそれを更新
                 let item = schedules.find(s => s.id === id);
                 if (item) {
                     item.person = person;
@@ -418,7 +416,6 @@
                     item.memo = memo;
                 }
             } else {
-                // IDがない場合でも、「同じ日付・同じ人物」の予定が既に存在していれば上書きし、別人物なら追加する（他方の予定が消えないように修正）
                 let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
                 if (existingIndex !== -1) {
                     schedules[existingIndex] = { id: schedules[existingIndex].id, person, date, plan, time, lunch, dinner, memo };
