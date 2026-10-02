@@ -25,7 +25,7 @@
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="max-w-md w-full mx-auto p-1.5 space-y-2 overflow-hidden flex-1 flex flex-col">
+    <main class="max-w-md w-full mx-auto p-1.5 space-y-1.5 overflow-hidden flex-1 flex flex-col">
 
         <!-- ① 週表示ビュー -->
         <div id="view-week" class="space-y-1.5 hidden flex-1 flex flex-col overflow-hidden">
@@ -41,13 +41,13 @@
         </div>
 
         <!-- ② 月表示カレンダービュー -->
-        <div id="view-month" class="space-y-2 flex-1 flex flex-col overflow-hidden">
+        <div id="view-month" class="space-y-1.5 flex-1 flex flex-col overflow-hidden">
             <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold shrink-0">
                 <button onclick="changeMonth(-1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">◀ 前月</button>
                 <span id="month-title-label">2026年 10月</span>
                 <button onclick="changeMonth(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">翌月 ▶</button>
             </div>
-            <!-- カレンダーグリッド（スクロール対応） -->
+            <!-- カレンダーグリッド（高さを戻しつつスクロール対応） -->
             <div class="bg-white border rounded p-1 flex-1 overflow-y-auto flex flex-col">
                 <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-1 shrink-0">
                     <span class="text-red-600">月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-600">土</span><span class="text-red-600">日</span>
@@ -283,7 +283,7 @@
             }
         }
 
-        // --- 月表示（5週・6週の月でもスクロール可能に修正） ---
+        // --- 月表示（元の高めの枠サイズに戻しつつスクロール対応） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -300,7 +300,7 @@
 
             for (let i = 0; i < firstDayIndex; i++) {
                 let emptyCell = document.createElement('div');
-                emptyCell.className = 'h-20 bg-gray-50/50 border rounded';
+                emptyCell.className = 'h-24 bg-gray-50/50 border rounded';
                 grid.appendChild(emptyCell);
             }
 
@@ -315,7 +315,7 @@
                 let isSelected = (selectedDateStr === dateStr);
                 let bgClass = isSelected ? 'bg-amber-100 border-amber-400 ring-1 ring-amber-400' : 'bg-white hover:bg-gray-50';
 
-                cell.className = `p-1 border rounded h-20 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
+                cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
                 
                 cell.onclick = () => {
                     if (selectedDateStr === dateStr) {
