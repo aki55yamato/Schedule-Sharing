@@ -47,7 +47,7 @@
                 <span id="month-title-label">2026年 10月</span>
                 <button onclick="changeMonth(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">翌月 ▶</button>
             </div>
-            <!-- カレンダーグリッド（高さを戻しつつスクロール対応） -->
+            <!-- カレンダーグリッド -->
             <div class="bg-white border rounded p-1 flex-1 overflow-y-auto flex flex-col">
                 <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-1 shrink-0">
                     <span class="text-red-600">月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-600">土</span><span class="text-red-600">日</span>
@@ -252,13 +252,16 @@
                         ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
                         : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
 
+                    // m:を削除し、文字サイズを最小(text-[9px])にして行間を調整。line-clamp-2で最大2行までに収まるように設定
+                    let memoHtml = item?.memo ? `<div class="w-16 shrink-0 text-[9px] text-gray-500 px-0.5 line-clamp-2 leading-tight break-all">${item.memo}</div>` : '<div class="w-16 shrink-0"></div>';
+
                     rowsHtml += `
                         <div class="flex items-center justify-between py-0.5 border-b border-gray-100 last:border-none">
                             <div class="w-5 shrink-0">${nameBadge}</div>
                             <span class="flex-1 truncate px-1 font-bold text-gray-800 min-w-0">${item ? item.plan : '-'}</span>
                             <span class="w-12 shrink-0 text-right text-gray-500">${item ? item.time : '-'}</span>
                             <span class="w-16 shrink-0 text-center text-gray-600">${mealText}</span>
-                            <span class="w-16 shrink-0 truncate text-gray-400 text-[10px] px-1">${item?.memo ? 'm:' + item.memo : ''}</span>
+                            ${memoHtml}
                             <button onclick="openModalForPerson('${dateStr}', '${person}')" class="w-6 shrink-0 text-xs text-gray-400 hover:text-black text-center">✏️</button>
                         </div>
                     `;
@@ -283,7 +286,7 @@
             }
         }
 
-        // --- 月表示（元の高めの枠サイズに戻しつつスクロール対応） ---
+        // --- 月表示 ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
