@@ -29,8 +29,7 @@
     <header class="bg-gray-800 text-white p-2 shadow-sm z-40 flex justify-between items-center shrink-0">
         <h1 class="text-xs font-bold">📅 ふたりの予定ボード</h1>
         <div class="flex items-center space-x-2">
-            <button onclick="openBatchModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow">📝 1週間一括入力</button>
-            <span id="current-month-label" class="text-[10px] bg-gray-700 px-2 py-1 rounded font-bold">2026年10月</span>
+            <button onclick="goToToday()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow">📅 今日に戻る</button>
         </div>
     </header>
 
@@ -39,13 +38,16 @@
 
         <!-- ① 週表示ビュー -->
         <div id="view-week" class="space-y-1.5 hidden flex-1 flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center bg-gray-100 p-2 rounded text-xs font-bold shrink-0">
-                <button onclick="changeWeek(-1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">◀ 前の週</button>
-                <span id="week-range-label">10/5(月) 〜 10/11(日)</span>
-                <button onclick="changeWeek(1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">次の週 ▶</button>
+            <div class="flex justify-between items-center bg-gray-100 p-2 rounded shrink-0">
+                <div class="flex items-center space-x-2">
+                    <button onclick="changeWeek(-1)" class="px-2 py-1 bg-white border rounded text-[11px] font-bold">◀</button>
+                    <span id="week-range-label" class="text-xs font-bold text-gray-800 tracking-tight">10/5(月) 〜 10/11(日)</span>
+                    <button onclick="changeWeek(1)" class="px-2 py-1 bg-white border rounded text-[11px] font-bold">▶</button>
+                </div>
+                <button onclick="openBatchModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow">📝一括入力</button>
             </div>
 
-            <!-- 週表示：余防最適化コンテナ -->
+            <!-- 週表示：余白最適化コンテナ -->
             <div id="week-card-container" class="flex-1 flex flex-col justify-between overflow-hidden space-y-1">
                 <!-- JavaScriptで動的生成 -->
             </div>
@@ -54,9 +56,9 @@
         <!-- ② 月表示カレンダービュー -->
         <div id="view-month" class="space-y-1.5 flex-1 flex flex-col overflow-hidden">
             <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold shrink-0">
-                <button onclick="changeMonth(-1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">◀ 前月</button>
+                <button onclick="changeMonth(-1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">◀ 前月</button>
                 <span id="month-title-label">2026年 10月</span>
-                <button onclick="changeMonth(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">翌月 ▶</button>
+                <button onclick="changeMonth(1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">翌月 ▶</button>
             </div>
             <!-- カレンダーグリッド -->
             <div class="bg-white border rounded p-1 flex-1 overflow-y-auto flex flex-col">
@@ -175,6 +177,15 @@
         // 操作時点での今日の日付文字列 (YYYY-MM-DD) を自動取得
         const todayStr = new Date().toISOString().split('T')[0];
 
+        // 「今日に戻る」ボタンの共通処理
+        function goToToday() {
+            targetDate = new Date(todayStr);
+            renderMonthView();
+            if(!document.getElementById('view-week').classList.contains('hidden')) {
+                renderWeekView();
+            }
+        }
+
         function isJapaneseHoliday(date) {
             let y = date.getFullYear();
             let m = date.getMonth() + 1;
@@ -249,8 +260,11 @@
             endOfWeek.setDate(endOfWeek.getDate() + 6);
 
             document.getElementById('week-range-label').innerText = 
-                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
-            document.getElementById('current-month-label').innerText = `${targetDate.getFullYear()}年${targetDate.getMonth()+1}月`;
+                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()(月) || ''}${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
+            
+            // 正しく日付フォーマットを設定
+            document.getElementById('week-range-label').innerText = 
+                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()}(${['日','月','火','水','木','金','土'][startOfWeek.getDay()]}) 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}(${['日','月','火','水','木','金','土'][endOfWeek.getDay()]})`;
 
             const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -277,9 +291,7 @@
                 let card = document.createElement('div');
                 card.className = `border rounded px-1.5 py-1 text-xs flex items-stretch space-x-1.5 flex-1 min-h-0 transition cursor-pointer ${highlightClass}`;
                 
-                // 週表示全体をタップしたときの挙動（月表示と同様の2度タップ仕様）
                 card.onclick = (e) => {
-                    // 編集ボタンを押したときはカード自体のクリックを発火させない
                     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
 
                     if (selectedDateStr === dateStr) {
@@ -353,7 +365,6 @@
             let month = targetDate.getMonth();
 
             document.getElementById('month-title-label').innerText = `${year}年 ${month + 1}月`;
-            document.getElementById('current-month-label').innerText = `${year}年${month + 1}月`;
 
             let firstDay = new Date(year, month, 1).getDay();
             let firstDayIndex = (firstDay === 0) ? 6 : firstDay - 1;
@@ -500,7 +511,6 @@
 
         // --- 一週間一括入力機能 ---
         function openBatchModal() {
-            // 現在表示されている週の開始日（月曜日）を計算
             let startOfWeek = new Date(targetDate);
             let day = startOfWeek.getDay();
             let diff = (day === 0) ? -6 : 1 - day;
@@ -569,7 +579,6 @@
             document.getElementById('batch-modal').classList.remove('hidden');
         }
 
-        // 人物が切り替わったときに一括入力モーダルのフォーム内容を再読み込みする
         document.getElementById('batch-person').addEventListener('change', () => {
             openBatchModal();
         });
@@ -594,7 +603,6 @@
                 let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
 
                 if (plan === '') {
-                    // 予定が空欄の場合は既存データを削除（または登録しない）
                     if (existingIndex !== -1) {
                         schedules.splice(existingIndex, 1);
                     }
