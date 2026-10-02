@@ -7,113 +7,112 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 pb-24"> <!-- 下部固定タブの分だけ余白を確保 -->
+<body class="bg-gray-50 text-gray-800 pb-20 text-xs">
 
     <!-- ヘッダー -->
-    <header class="bg-blue-600 text-white p-3 shadow-md sticky top-0 z-40 flex justify-between items-center">
-        <h1 class="text-sm font-bold">📅 ふたりの予定ボード</h1>
-        <span id="current-month-label" class="text-xs bg-blue-700 px-2 py-1 rounded">2026年10月</span>
+    <header class="bg-blue-600 text-white p-2.5 shadow-md sticky top-0 z-40 flex justify-between items-center">
+        <h1 class="text-xs font-bold">📅 ふたりの予定ボード</h1>
+        <span id="current-month-label" class="text-[10px] bg-blue-700 px-2 py-0.5 rounded">2026年10月</span>
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="max-w-md mx-auto p-3 space-y-4">
+    <main class="max-w-md mx-auto p-2 space-y-2">
 
-        <!-- ① 週表示ビュー -->
-        <div id="view-week" class="space-y-3">
+        <!-- ① 週表示ビュー（コンパクトに1週間一望） -->
+        <div id="view-week" class="space-y-2">
             <div class="flex justify-between items-center bg-white p-2 rounded-lg shadow-sm text-xs font-bold">
-                <button onclick="changeWeek(-1)" class="px-2 py-1 bg-gray-100 rounded">◀ 前の週</button>
+                <button onclick="changeWeek(-1)" class="px-2 py-1 bg-gray-100 rounded text-[11px]">◀ 前の週</button>
                 <span id="week-range-label">10/4(日) 〜 10/10(土)</span>
-                <button onclick="changeWeek(1)" class="px-2 py-1 bg-gray-100 rounded">次の週 ▶</button>
+                <button onclick="changeWeek(1)" class="px-2 py-1 bg-gray-100 rounded text-[11px]">次の週 ▶</button>
             </div>
 
-            <!-- 2人分を比較できる週ごとのリスト -->
-            <div id="week-card-container" class="space-y-3">
+            <!-- 週ごとのリスト（各日を1行ベースのコンパクトなテーブル風に） -->
+            <div id="week-card-container" class="space-y-1.5">
                 <!-- JavaScriptで動的生成 -->
             </div>
         </div>
 
-        <!-- ② 月表示カレンダービュー -->
-        <div id="view-month" class="space-y-3 hidden">
+        <!-- ② 月表示カレンダービュー（文字と余白を詰めて情報をわかりやすく） -->
+        <div id="view-month" class="space-y-2 hidden">
             <div class="flex justify-between items-center bg-white p-2 rounded-lg shadow-sm text-xs font-bold">
-                <button onclick="changeMonth(-1)" class="px-2 py-1 bg-gray-100 rounded">◀ 前月</button>
+                <button onclick="changeMonth(-1)" class="px-2 py-1 bg-gray-100 rounded text-[11px]">◀ 前月</button>
                 <span id="month-title-label">2026年 10月</span>
-                <button onclick="changeMonth(1)" class="px-2 py-1 bg-gray-100 rounded">翌月 ▶</button>
+                <button onclick="changeMonth(1)" class="px-2 py-1 bg-gray-100 rounded text-[11px]">翌月 ▶</button>
             </div>
             <!-- カレンダーグリッド -->
-            <div class="bg-white rounded-xl shadow-sm p-2">
-                <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-2">
+            <div class="bg-white rounded-xl shadow-sm p-1.5">
+                <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-500 mb-1">
                     <span class="text-red-500">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="text-blue-500">土</span>
                 </div>
-                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs">
+                <div id="calendar-grid" class="grid grid-cols-7 gap-0.5 text-center">
                     <!-- JavaScriptで動的生成 -->
                 </div>
             </div>
         </div>
 
-        <!-- ③ 予定登録ビュー -->
-        <div id="view-input" class="bg-white p-4 rounded-xl shadow-sm space-y-3 hidden">
+        <!-- ③ 予定登録ビュー（変更なし） -->
+        <div id="view-input" class="bg-white p-3 rounded-xl shadow-sm space-y-2.5 hidden">
             <h2 class="text-xs font-bold text-blue-600 border-b pb-1">予定の新規登録・編集</h2>
             <input type="hidden" id="edit-id" value="">
             
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">誰の予定？</label>
-                <select id="input-person" class="w-full border rounded-lg p-2 text-xs bg-white font-bold text-blue-600">
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">誰の予定？</label>
+                <select id="input-person" class="w-full border rounded p-1.5 text-xs bg-white font-bold text-blue-600">
                     <option value="あきた">あきた</option>
                     <option value="ちーた">ちーた</option>
                 </select>
             </div>
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">日付</label>
-                <input type="date" id="input-date" class="w-full border rounded-lg p-2 text-xs">
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">日付</label>
+                <input type="date" id="input-date" class="w-full border rounded p-1.5 text-xs">
             </div>
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">予定</label>
-                <input type="text" id="input-plan" placeholder="例：出社、在宅、英検、飲み会" class="w-full border rounded-lg p-2 text-xs">
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">予定</label>
+                <input type="text" id="input-plan" placeholder="例：出社、在宅、英検、飲み会" class="w-full border rounded p-1.5 text-xs">
             </div>
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">帰宅時刻</label>
-                <input type="text" id="input-time" placeholder="例：19:00、自宅、遅め" class="w-full border rounded-lg p-2 text-xs">
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">帰宅時刻</label>
+                <input type="text" id="input-time" placeholder="例：19:00、自宅、遅め" class="w-full border rounded p-1.5 text-xs">
             </div>
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">夕飯の要否</label>
-                <select id="input-dinner" class="w-full border rounded-lg p-2 text-xs bg-white">
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">夕飯の要否</label>
+                <select id="input-dinner" class="w-full border rounded p-1.5 text-xs bg-white">
                     <option value="○">○ (家で食べる)</option>
                     <option value="✕">✕ (いらない/外食)</option>
                     <option value="△">△ (未定/遅め)</option>
                 </select>
             </div>
             <div>
-                <label class="block text-[11px] font-bold text-gray-600 mb-1">備考欄 (メモ)</label>
-                <textarea id="input-memo" rows="2" placeholder="例：タコスサラダ、ジム寄る" class="w-full border rounded-lg p-2 text-xs"></textarea>
+                <label class="block text-[10px] font-bold text-gray-600 mb-0.5">備考欄 (メモ)</label>
+                <textarea id="input-memo" rows="2" placeholder="例：タコスサラダ、ジム寄る" class="w-full border rounded p-1.5 text-xs"></textarea>
             </div>
 
-            <div class="flex space-x-2 pt-2">
-                <button type="button" onclick="saveSchedule()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg text-xs shadow">保存する</button>
-                <button type="button" onclick="switchView('week')" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-lg text-xs">キャンセル</button>
+            <div class="flex space-x-2 pt-1">
+                <button type="button" onclick="saveSchedule()" class="flex-1 bg-blue-600 text-white font-bold py-1.5 rounded text-xs shadow">保存する</button>
+                <button type="button" onclick="switchView('week')" class="bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded text-xs">キャンセル</button>
             </div>
         </div>
 
     </main>
 
     <!-- 下部固定タブナビゲーション -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex justify-around p-2 z-50">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex justify-around p-1.5 z-50">
         <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-blue-600 font-bold transition">
-            <span class="text-base">📅</span>
+            <span class="text-sm">📅</span>
             <span class="text-[10px]">週表示</span>
         </button>
         <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
-            <span class="text-base">🗓️</span>
+            <span class="text-sm">🗓️</span>
             <span class="text-[10px]">月表示</span>
         </button>
         <button onclick="switchView('input')" id="btn-input" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
-            <span class="text-base">➕</span>
+            <span class="text-sm">➕</span>
             <span class="text-[10px]">予定追加</span>
         </button>
     </nav>
 
     <!-- スクリプト：動作ロジック -->
     <script>
-        // サンプルデータ（あきた・ちーたの2人分のデータ構造）
         let schedules = [
             { id: '1', person: 'あきた', date: '2026-10-02', plan: '出社', time: '19:00', dinner: '○', memo: '仕事が長引くかも。' },
             { id: '2', person: 'ちーた', date: '2026-10-02', plan: '在宅', time: '自宅', dinner: '○', memo: '味噌汁、サラダ' },
@@ -122,7 +121,6 @@
 
         let targetDate = new Date('2026-10-02');
 
-        // タブ切り替え処理
         function switchView(view) {
             ['week', 'month', 'input'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
@@ -143,7 +141,7 @@
             window.scrollTo(0, 0);
         }
 
-        // 週表示の描画（2人分を並べて比較できるようにする）
+        // 週表示：1行にコンパクトに収めてスクロールなしで1週間分を表示
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -165,41 +163,36 @@
 
                 let dayName = ['日', '月', '火', '水', '木', '金', '土'][i];
                 let isWeekend = (i === 0 || i === 6);
-
-                // その日の2人分のデータを取得
                 let daySchedules = schedules.filter(s => s.date === dateStr);
 
                 let card = document.createElement('div');
-                card.className = `bg-white rounded-xl p-3 shadow-sm border-l-4 ${isWeekend ? 'border-red-400' : 'border-blue-500'}`;
+                card.className = `bg-white rounded-lg p-1.5 shadow-sm border-l-4 text-[11px] ${isWeekend ? 'border-red-400' : 'border-blue-500'}`;
                 
-                let schedulesHtml = '';
+                let rowsHtml = '';
                 ['あきた', 'ちーた'].forEach(person => {
                     let item = daySchedules.find(s => s.person === person);
-                    schedulesHtml += `
-                        <div class="bg-gray-50 p-2 rounded-lg mb-1 last:mb-0 border border-gray-100">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${person === 'あきた' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}">${person}</span>
-                                <button onclick="editScheduleByDateAndPerson('${dateStr}', '${person}')" class="text-[10px] text-gray-500 hover:text-blue-600">✏️ 編集</button>
+                    rowsHtml += `
+                        <div class="flex items-center justify-between py-0.5 border-b border-gray-100 last:border-none">
+                            <div class="flex items-center space-x-1 w-16 shrink-0">
+                                <span class="font-bold px-1 rounded text-[9px] ${person === 'あきた' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}">${person}</span>
                             </div>
-                            <div class="grid grid-cols-3 gap-1 text-[11px]">
-                                <div><span class="text-gray-400 text-[9px] block">予定</span><span class="font-bold">${item ? item.plan : '-'}</span></div>
-                                <div><span class="text-gray-400 text-[9px] block">帰宅</span><span>${item ? item.time : '-'}</span></div>
-                                <div><span class="text-gray-400 text-[9px] block">夕飯</span><span class="font-bold ${item && item.dinner === '○' ? 'text-blue-600' : 'text-red-500'}">${item ? item.dinner : '-'}</span></div>
-                            </div>
-                            ${item && item.memo ? `<div class="text-[10px] text-gray-500 mt-1 border-t pt-1">メモ: ${item.memo}</div>` : ''}
+                            <div class="flex-1 truncate px-1 font-bold text-gray-800">${item ? item.plan : '-'}</div>
+                            <div class="w-16 text-right text-gray-500 shrink-0">${item ? item.time : '-'}</div>
+                            <div class="w-6 text-center font-bold ${item && item.dinner === '○' ? 'text-blue-600' : 'text-red-500'} shrink-0">${item ? item.dinner : '-'}</div>
+                            <button onclick="editScheduleByDateAndPerson('${dateStr}', '${person}')" class="ml-1 text-[10px] text-gray-400 hover:text-blue-600 px-1">✏️</button>
                         </div>
                     `;
                 });
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center border-b pb-1 mb-2">
-                        <span class="text-xs font-bold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-700'}">
-                            ${d.getMonth()+1}月${d.getDate()}日 (${dayName})
+                    <div class="flex justify-between items-center bg-gray-50 px-1.5 py-0.5 rounded mb-0.5">
+                        <span class="font-bold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-700'}">
+                            ${d.getMonth()+1}/${d.getDate()} (${dayName})
                         </span>
-                        <button onclick="addNewForDate('${dateStr}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">+ 予定追加</button>
+                        <button onclick="addNewForDate('${dateStr}')" class="text-[10px] text-blue-600 font-bold">+ 追加</button>
                     </div>
-                    <div class="space-y-1">
-                        ${schedulesHtml}
+                    <div class="space-y-0.5 px-0.5">
+                        ${rowsHtml}
                     </div>
                 `;
                 container.appendChild(card);
@@ -211,7 +204,7 @@
             renderWeekView();
         }
 
-        // 月表示カレンダーの描画
+        // 月表示：文字を小さく・高さを抑えて全体を見やすく
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -226,7 +219,9 @@
             let lastDay = new Date(year, month + 1, 0).getDate();
 
             for (let i = 0; i < firstDayIndex; i++) {
-                grid.appendChild(document.createElement('div'));
+                let emptyCell = document.createElement('div');
+                emptyCell.className = 'h-14 bg-gray-50/50 rounded';
+                grid.appendChild(emptyCell);
             }
 
             for (let day = 1; day <= lastDay; day++) {
@@ -234,12 +229,12 @@
                 let daySchedules = schedules.filter(s => s.date === dateStr);
 
                 let cell = document.createElement('div');
-                cell.className = `p-1 border rounded-lg h-20 flex flex-col justify-between text-left cursor-pointer hover:bg-blue-50 transition bg-white`;
+                cell.className = `p-1 border rounded h-14 flex flex-col justify-between text-left cursor-pointer hover:bg-blue-50 transition bg-white overflow-hidden`;
                 cell.onclick = () => addNewForDate(dateStr);
 
-                let contents = `<div class="text-[10px] font-bold text-gray-700">${day}</div><div class="space-y-0.5 overflow-hidden">`;
+                let contents = `<div class="text-[9px] font-bold text-gray-600 leading-none">${day}</div><div class="space-y-0.5 overflow-hidden flex-1 mt-0.5">`;
                 daySchedules.forEach(s => {
-                    contents += `<div class="text-[9px] truncate bg-gray-50 rounded px-1"><span class="font-bold ${s.person === 'あきた' ? 'text-blue-600' : 'text-pink-600'}">${s.person[0]}:</span> ${s.plan}</div>`;
+                    contents += `<div class="text-[8px] truncate leading-tight"><span class="font-bold ${s.person === 'あきた' ? 'text-blue-600' : 'text-pink-600'}">${s.person[0]}:</span>${s.plan}(${s.dinner})</div>`;
                 });
                 contents += `</div>`;
                 cell.innerHTML = contents;
@@ -253,7 +248,6 @@
             renderMonthView();
         }
 
-        // 編集画面を開く
         function editScheduleByDateAndPerson(dateStr, person) {
             let item = schedules.find(s => s.date === dateStr && s.person === person);
             document.getElementById('edit-id').value = item ? item.id : '';
@@ -276,7 +270,6 @@
             switchView('input');
         }
 
-        // 保存処理
         function saveSchedule() {
             let id = document.getElementById('edit-id').value;
             let person = document.getElementById('input-person').value;
@@ -302,7 +295,6 @@
                     item.memo = memo;
                 }
             } else {
-                // 同じ人・同じ日の既存予定があれば上書き、なければ追加
                 let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
                 if (existingIndex !== -1) {
                     schedules[existingIndex] = { id: schedules[existingIndex].id, person, date, plan, time, dinner, memo };
@@ -315,7 +307,6 @@
             switchView('week');
         }
 
-        // 初期表示
         renderWeekView();
     </script>
 </body>
