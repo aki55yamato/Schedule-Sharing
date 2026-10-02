@@ -41,7 +41,7 @@
             <div class="flex justify-between items-center bg-gray-100 p-2 rounded shrink-0">
                 <div class="flex items-center space-x-2">
                     <button onclick="changeWeek(-1)" class="px-2 py-1 bg-white border rounded text-[11px] font-bold">◀</button>
-                    <span id="week-range-label" class="text-xs font-bold text-gray-800 tracking-tight">10/5(月) 〜 10/11(日)</span>
+                    <span id="week-range-label" class="text-sm font-bold text-gray-800 tracking-tight">10/5(月) 〜 10/11(日)</span>
                     <button onclick="changeWeek(1)" class="px-2 py-1 bg-white border rounded text-[11px] font-bold">▶</button>
                 </div>
                 <button onclick="openBatchModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow">📝一括入力</button>
@@ -246,7 +246,7 @@
             }
         }
 
-        // --- 週表示（2度タップ・本日表示対応） ---
+        // --- 週表示（修正版） ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -259,14 +259,12 @@
             let endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(endOfWeek.getDate() + 6);
 
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
             document.getElementById('week-range-label').innerText = 
-                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()(月) || ''}${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}`;
-            
-            // 正しく日付フォーマットを設定
-            document.getElementById('week-range-label').innerText = 
-                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()}(${['日','月','火','水','木','金','土'][startOfWeek.getDay()]}) 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}(${['日','月','火','水','木','金','土'][endOfWeek.getDay()]})`;
+                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()}(${dayNames[startOfWeek.getDay()]}) 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}(${dayNames[endOfWeek.getDay()]})`;
 
-            const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
+            const weekDayOrder = ['月', '火', '水', '木', '金', '土', '日'];
+            const jsDayToOrderIndex = [6, 0, 1, 2, 3, 4, 5]; // 日(0)->6, 月(1)->0 ...
 
             for (let i = 0; i < 7; i++) {
                 let d = new Date(startOfWeek);
@@ -309,7 +307,7 @@
                 let dateCol = `
                     <div class="w-12 shrink-0 flex flex-col justify-center items-center bg-gray-50 border-r pr-1 text-center ${textColClass}">
                         <span class="text-[11px] font-bold">${d.getMonth()+1}/${d.getDate()}</span>
-                        <span class="text-[9px]">(${dayNames[i]})</span>
+                        <span class="text-[9px]">(${weekDayOrder[i]})</span>
                         ${todayBadge}
                     </div>
                 `;
@@ -356,7 +354,7 @@
             }
         }
 
-        // --- 月表示（本日表示対応） ---
+        // --- 月表示（上下半分にレイアウト・線なし・あふれ時は「...」省略対応） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -384,10 +382,10 @@
                 let isToday = (dateStr === todayStr);
 
                 let cell = document.createElement('div');
-                
                 let isSelected = (selectedDateStr === dateStr);
                 let bgClass = isSelected ? 'glow-highlight bg-blue-50/50' : 'bg-white hover:bg-gray-50';
 
+                // h-24 の高さを上下半分（flex-1ずつ）に均等分割。線は引かない
                 cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
                 
                 cell.onclick = () => {
@@ -404,20 +402,40 @@
                 };
 
                 let todayBadge = isToday ? '<span class="text-[9px] text-red-600 font-bold ml-1">本日</span>' : '';
-                let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5 flex justify-between items-center"><span>${day}</span>${todayBadge}</div><div class="space-y-0.5 flex-1 mt-0.5 overflow-hidden">`;
                 
-                ['あきた', 'ちーた'].forEach(person => {
+                // 日付ヘッダー部分
+                let headerHtml = `<div class="text-[10px] font-bold text-gray-700 pb-0.5 flex justify-between items-center shrink-0"><span>${day}</span>${todayBadge}</div>`;
+
+                // 2人分の予定エリア（上下半分に均等割り：flex-1）
+                let persons = ['あきた', 'ちーた'];
+                let rowsHtml = '<div class="flex-1 flex flex-col justify-around overflow-hidden space-y-0.5">';
+                
+                persons.forEach(person => {
                     let s = daySchedules.find(item => item.person === person);
+                    let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold">あ:</span>' : '<span class="text-red-600 font-bold">ち:</span>';
+                    
                     if (s) {
-                        let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold">あ:</span>' : '<span class="text-red-600 font-bold">ち:</span>';
                         let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        contents += `<div class="text-[8.5px] leading-tight break-words">${nameBadge}${s.plan} ${s.time} (${mealStr})</div>`;
+                        // 文字数が多くあふれる場合は truncate と flex で「...」省略
+                        rowsHtml += `
+                            <div class="flex items-center text-[8.5px] leading-tight overflow-hidden min-h-0 flex-1">
+                                <span class="shrink-0 mr-0.5">${nameBadge}</span>
+                                <span class="truncate font-bold text-gray-800">${s.plan}</span>
+                                <span class="shrink-0 text-gray-500 ml-1">${s.time} (${mealStr})</span>
+                            </div>
+                        `;
+                    } else {
+                        rowsHtml += `
+                            <div class="flex items-center text-[8.5px] leading-tight text-gray-300 flex-1">
+                                <span class="shrink-0 mr-0.5">${nameBadge}</span>
+                                <span>-</span>
+                            </div>
+                        `;
                     }
                 });
+                rowsHtml += '</div>';
 
-                contents += `</div>`;
-                cell.innerHTML = contents;
-
+                cell.innerHTML = headerHtml + rowsHtml;
                 grid.appendChild(cell);
             }
         }
