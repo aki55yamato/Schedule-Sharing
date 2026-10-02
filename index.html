@@ -7,7 +7,6 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* ページ全体がバウンスしたり伸びたりするのを完全に防ぐ */
         body {
             position: fixed;
             width: 100%;
@@ -30,20 +29,20 @@
 
         <!-- ① 週表示ビュー -->
         <div id="view-week" class="space-y-1.5 hidden">
-            <div class="flex justify-between items-center bg-gray-100 p-2 rounded text-xs font-bold">
+            <div class="flex justify-between items-center bg-gray-100 p-2 rounded text-xs font-bold shrink-0">
                 <button onclick="changeWeek(-1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">◀ 前の週</button>
                 <span id="week-range-label">10/5(月) 〜 10/11(日)</span>
                 <button onclick="changeWeek(1)" class="px-2.5 py-1 bg-white border rounded text-[11px]">次の週 ▶</button>
             </div>
 
-            <div id="week-card-container" class="space-y-1.5">
+            <div id="week-card-container" class="space-y-1.5 overflow-hidden">
                 <!-- JavaScriptで動的生成 -->
             </div>
         </div>
 
         <!-- ② 月表示カレンダービュー -->
         <div id="view-month" class="space-y-2">
-            <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold">
+            <div class="flex justify-between items-center bg-gray-100 p-1.5 rounded text-xs font-bold shrink-0">
                 <button onclick="changeMonth(-1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">◀ 前月</button>
                 <span id="month-title-label">2026年 10月</span>
                 <button onclick="changeMonth(1)" class="px-2 py-0.5 bg-white border rounded text-[11px]">翌月 ▶</button>
@@ -59,9 +58,24 @@
             </div>
         </div>
 
-        <!-- ③ 予定登録ビュー -->
-        <div id="view-input" class="bg-white border p-4 rounded space-y-3.5 hidden">
-            <h2 class="text-xs font-bold text-gray-800 border-b pb-1.5">予定の新規登録・編集</h2>
+    </main>
+
+    <!-- 下部固定タブナビゲーション（2タブに縮小） -->
+    <nav class="bg-white border-t border-gray-200 flex justify-around p-1.5 z-50 shrink-0">
+        <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
+            <span class="text-sm">🗓️</span>
+            <span class="text-[10px]">月表示</span>
+        </button>
+        <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
+            <span class="text-sm">📅</span>
+            <span class="text-[10px]">週表示</span>
+        </button>
+    </nav>
+
+    <!-- モーダル：予定の新規登録・編集用 -->
+    <div id="schedule-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white border p-4 rounded space-y-3.5 w-full max-w-sm shadow-xl">
+            <h2 id="modal-title" class="text-xs font-bold text-gray-800 border-b pb-1.5">予定の新規登録・編集</h2>
             <input type="hidden" id="edit-id" value="">
             
             <div class="space-y-1">
@@ -108,27 +122,10 @@
 
             <div class="flex space-x-2 pt-2">
                 <button type="button" onclick="saveSchedule()" class="flex-1 bg-gray-800 text-white font-bold py-2 rounded text-xs">保存する</button>
-                <button type="button" onclick="switchView('month')" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded text-xs">キャンセル</button>
+                <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded text-xs">キャンセル</button>
             </div>
         </div>
-
-    </main>
-
-    <!-- 下部固定タブナビゲーション -->
-    <nav class="bg-white border-t border-gray-200 flex justify-around p-1.5 z-50 shrink-0">
-        <button onclick="switchView('month')" id="btn-month" class="flex flex-col items-center flex-1 py-1 text-gray-800 font-bold transition">
-            <span class="text-sm">🗓️</span>
-            <span class="text-[10px]">月表示</span>
-        </button>
-        <button onclick="switchView('week')" id="btn-week" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
-            <span class="text-sm">📅</span>
-            <span class="text-[10px]">週表示</span>
-        </button>
-        <button onclick="switchView('input')" id="btn-input" class="flex flex-col items-center flex-1 py-1 text-gray-400 font-bold transition">
-            <span class="text-sm">➕</span>
-            <span class="text-[10px]">予定追加</span>
-        </button>
-    </nav>
+    </div>
 
     <!-- スクリプト -->
     <script>
@@ -139,6 +136,7 @@
         ];
 
         let targetDate = new Date('2026-10-02');
+        let selectedDateStr = null; // 月表示で1回タップされた日付を記憶
 
         function isJapaneseHoliday(date) {
             let y = date.getFullYear();
@@ -167,7 +165,7 @@
         }
 
         function switchView(view) {
-            ['week', 'month', 'input'].forEach(v => {
+            ['week', 'month'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
                 let btn = document.getElementById(`btn-${v}`);
                 btn.classList.remove('text-gray-800');
@@ -180,11 +178,6 @@
 
             if (view === 'week') renderWeekView();
             if (view === 'month') renderMonthView();
-            if (view === 'input' && !document.getElementById('edit-id').value) {
-                let todayStr = new Date().toISOString().split('T')[0];
-                document.getElementById('input-date').value = todayStr;
-                updateMealInputVisibility(todayStr);
-            }
         }
 
         document.getElementById('input-date').addEventListener('change', (e) => {
@@ -205,6 +198,7 @@
             }
         }
 
+        // --- 週表示（列幅を完全固定し、長い予定でも編集ボタンが消えないように修正） ---
         function renderWeekView() {
             const container = document.getElementById('week-card-container');
             container.innerHTML = '';
@@ -249,7 +243,7 @@
                     </div>
                 `;
 
-                let rowsHtml = '<div class="flex-1 space-y-1">';
+                let rowsHtml = '<div class="flex-1 space-y-1 min-w-0">'; // min-w-0で flexアイテム内の縮小を制御
                 ['あきた', 'ちーた'].forEach(person => {
                     let item = daySchedules.find(s => s.person === person);
                     let mealText = offDay ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
@@ -260,12 +254,12 @@
 
                     rowsHtml += `
                         <div class="flex items-center justify-between py-0.5 border-b border-gray-100 last:border-none">
-                            <div class="w-6 shrink-0">${nameBadge}</div>
-                            <span class="flex-1 truncate px-1 font-bold text-gray-800">${item ? item.plan : '-'}</span>
-                            <span class="w-16 text-right text-gray-500">${item ? item.time : '-'}</span>
-                            <span class="w-16 text-center text-gray-600">${mealText}</span>
-                            <span class="flex-1 truncate text-gray-400 text-[10px] px-1">${item?.memo ? 'm:' + item.memo : ''}</span>
-                            <button onclick="editScheduleByDateAndPerson('${dateStr}', '${person}')" class="text-xs text-gray-400 hover:text-black px-1">✏️</button>
+                            <div class="w-5 shrink-0">${nameBadge}</div>
+                            <span class="flex-1 truncate px-1 font-bold text-gray-800 min-w-0">${item ? item.plan : '-'}</span>
+                            <span class="w-12 shrink-0 text-right text-gray-500">${item ? item.time : '-'}</span>
+                            <span class="w-16 shrink-0 text-center text-gray-600">${mealText}</span>
+                            <span class="w-16 shrink-0 truncate text-gray-400 text-[10px] px-1">${item?.memo ? 'm:' + item.memo : ''}</span>
+                            <button onclick="openModalForPerson('${dateStr}', '${person}')" class="w-6 shrink-0 text-xs text-gray-400 hover:text-black text-center">✏️</button>
                         </div>
                     `;
                 });
@@ -289,7 +283,7 @@
             }
         }
 
-        // --- 月表示（固定表示） ---
+        // --- 月表示（1回タップで色変更、2回タップで編集モーダル起動） ---
         function renderMonthView() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -317,15 +311,23 @@
                 let offDay = isOffDay(d);
 
                 let cell = document.createElement('div');
-                cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer hover:bg-gray-50 bg-white overflow-hidden`;
+                
+                // 選択されている日付の場合は背景色を変える
+                let isSelected = (selectedDateStr === dateStr);
+                let bgClass = isSelected ? 'bg-amber-100 border-amber-400 ring-1 ring-amber-400' : 'bg-white hover:bg-gray-50';
+
+                cell.className = `p-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
+                
                 cell.onclick = () => {
-                    document.getElementById('edit-id').value = '';
-                    document.getElementById('input-date').value = dateStr;
-                    updateMealInputVisibility(dateStr);
-                    document.getElementById('input-plan').value = '';
-                    document.getElementById('input-time').value = '';
-                    document.getElementById('input-memo').value = '';
-                    switchView('input');
+                    if (selectedDateStr === dateStr) {
+                        // 2回連続タップ：予定の編集・追加モーダルを開く
+                        selectedDateStr = null;
+                        openModal(dateStr);
+                    } else {
+                        // 1回目タップ：色を変えて選択状態にする
+                        selectedDateStr = dateStr;
+                        renderMonthView();
+                    }
                 };
 
                 let contents = `<div class="text-[10px] font-bold text-gray-700 border-b pb-0.5">${day}</div><div class="space-y-0.5 flex-1 mt-0.5 overflow-hidden">`;
@@ -346,9 +348,10 @@
             }
         }
 
-        function editScheduleByDateAndPerson(dateStr, person) {
+        function openModal(dateStr, person = 'あきた') {
             updateMealInputVisibility(dateStr);
             let item = schedules.find(s => s.date === dateStr && s.person === person);
+            
             document.getElementById('edit-id').value = item ? item.id : '';
             document.getElementById('input-person').value = person;
             document.getElementById('input-date').value = dateStr;
@@ -360,7 +363,19 @@
             }
             document.getElementById('input-memo').value = item ? item.memo : '';
 
-            switchView('input');
+            document.getElementById('schedule-modal').classList.remove('hidden');
+        }
+
+        function openModalForPerson(dateStr, person) {
+            openModal(dateStr, person);
+        }
+
+        function closeModal() {
+            document.getElementById('schedule-modal').classList.add('hidden');
+            selectedDateStr = null;
+            if(!document.getElementById('view-month').classList.contains('hidden')) {
+                renderMonthView();
+            }
         }
 
         function saveSchedule() {
@@ -399,7 +414,13 @@
                 }
             }
 
-            switchView('month');
+            closeModal();
+            if(!document.getElementById('view-month').classList.contains('hidden')) {
+                renderMonthView();
+            }
+            if(!document.getElementById('view-week').classList.contains('hidden')) {
+                renderWeekView();
+            }
         }
 
         renderMonthView();
