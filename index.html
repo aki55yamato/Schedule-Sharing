@@ -63,7 +63,7 @@
 
             <!-- 週表示：余白最適化コンテナ -->
             <div id="week-card-container" class="flex-1 flex flex-col justify-between overflow-hidden space-y-1">
-                <!-- JavaScriptで動적生成 -->
+                <!-- JavaScriptで動的生成 -->
             </div>
         </div>
 
@@ -257,32 +257,18 @@
             }
         }
 
-        // --- タップ ＆ 長押しイベントハンドラの設定 ---
+        // --- 長押しイベントハンドラの設定（1度目の長押しでハイライト＆編集画面オープン） ---
         function attachPressEvents(element, dateStr) {
             const startPress = (e) => {
                 if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
                 if (pressTimer) clearTimeout(pressTimer);
 
-                // 約600msの長押しで編集モーダルを起動
+                // 約600msの長押しで、ハイライト設定と編集モーダル起動を同時に実行
                 pressTimer = setTimeout(() => {
-                    selectedDateStr = dateStr;
-                    openModal(dateStr);
+                    selectedDateStr = dateStr; // ハイライトを同時に適用
+                    openModal(dateStr);        // 編集モーダルを開く
                     pressTimer = null;
                 }, 600);
-            };
-
-            const endPress = (e) => {
-                if (pressTimer) {
-                    clearTimeout(pressTimer);
-                    pressTimer = null;
-                    
-                    // 通常タップ（短押し）の場合は選択ハイライトを切り替え
-                    selectedDateStr = (selectedDateStr === dateStr) ? null : dateStr;
-                    renderMonthView();
-                    if(!document.getElementById('view-week').classList.contains('hidden')) {
-                        renderWeekView();
-                    }
-                }
             };
 
             const cancelPress = () => {
@@ -293,386 +279,29 @@
             };
 
             element.addEventListener('touchstart', startPress, {passive: true});
-            element.addEventListener('touchend', endPress, {passive: true});
-            element.addEventListener('touchmove', cancelPress, {passive: true});
+            element.addEventListener('touchend', cancelPress, {passive: true});
+            element.addEventListener('touchmoveご指定の通り、短押しでの複雑な切り替えをなくし、**「長押しした瞬間に、ハイライトがついてそのまま1回で編集画面が開く」**ように修正しました。
 
-            element.addEventListener('mousedown', startPress);
-            element.addEventListener('mouseup', endPress);
-            element.addEventListener('mouseleave', cancelPress);
+以下のコードに丸ごと上書きしてご確認ください。
+
+```html
+<!DOCTYPE html>
+<html lang="ja" class="h-full overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ふたり専用 予定共有ボード</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <style>
+        body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
         }
-
-        // --- 週表示 ---
-        function renderWeekView() {
-            const container = document.getElementById('week-card-container');
-            container.innerHTML = '';
-
-            let startOfWeek = new Date(targetDate);
-            let day = startOfWeek.getDay();
-            let diff = (day === 0) ? -6 : 1 - day;
-            startOfWeek.setDate(startOfWeek.getDate() + diff);
-
-            let endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-            document.getElementById('week-range-label').innerText = 
-                `${startOfWeek.getMonth()+1}/${startOfWeek.getDate()}(${dayNames[startOfWeek.getDay()]}) 〜 ${endOfWeek.getMonth()+1}/${endOfWeek.getDate()}(${dayNames[endOfWeek.getDay()]})`;
-
-            const weekDayOrder = ['月', '火', '水', '木', '金', '土', '日'];
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(startOfWeek);
-                d.setDate(d.getDate() + i);
-                let dateStr = d.toISOString().split('T')[0];
-
-                let isSun = (d.getDay() === 0);
-                let isSat = (d.getDay() === 6);
-                let isHoli = isJapaneseHoliday(d);
-                let isToday = (dateStr === todayStr);
-
-                let textColClass = 'text-gray-700';
-                if (isSun || isHoli) textColClass = 'text-red-600 font-bold';
-                if (isSat) textColClass = 'text-blue-600 font-bold';
-
-                let daySchedules = schedules.filter(s => s.date === dateStr);
-                let offDay = isOffDay(d);
-
-                let isSelected = (selectedDateStr === dateStr);
-                let highlightClass = isSelected ? 'glow-highlight bg-blue-50/30' : 'bg-white';
-
-                let card = document.createElement('div');
-                card.className = `border rounded px-1.5 py-1 text-xs flex items-stretch space-x-1.5 flex-1 min-h-0 transition cursor-pointer ${highlightClass}`;
-                
-                attachPressEvents(card, dateStr);
-
-                let todayBadge = isToday ? '<span class="text-[8px] text-red-600 font-bold bg-red-50 px-1 rounded border border-red-200 mt-0.5">本日</span>' : '';
-
-                let dateCol = `
-                    <div class="w-12 shrink-0 flex flex-col justify-center items-center bg-gray-50 border-r pr-1 text-center ${textColClass}">
-                        <span class="text-[11px] font-bold">${d.getMonth()+1}/${d.getDate()}</span>
-                        <span class="text-[9px]">(${weekDayOrder[i]})</span>
-                        ${todayBadge}
-                    </div>
-                `;
-
-                let rowsHtml = '<div class="flex-1 flex flex-col justify-around min-w-0">';
-                ['あきた', 'ちーた'].forEach(person => {
-                    let item = daySchedules.find(s => s.person === person);
-                    let mealText = offDay ? `昼:${item?.lunch || '-'}/夕:${item?.dinner || '-'}` : `夕:${item?.dinner || '-'}`;
-                    
-                    let nameBadge = person === 'あきた' 
-                        ? '<span class="font-bold text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">あ</span>' 
-                        : '<span class="font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded text-[10px] w-5 text-center inline-block">ち</span>';
-
-                    let planHtml = item?.plan 
-                        ? `<span class="flex-1 text-gray-800 text-xs line-clamp-2 px-1 min-w-0">${item.plan}</span>` 
-                        : `<span class="flex-1 text-gray-300 text-xs px-1">-</span>`;
-
-                    let memoHtml = item?.memo ? `<div class="flex-1 text-[10px] text-gray-500 line-clamp-2 px-1 text-right">${item.memo}</div>` : '<div class="flex-1"></div>';
-
-                    rowsHtml += `
-                        <div class="flex items-center justify-between min-w-0">
-                            <div class="w-5 shrink-0">${nameBadge}</div>
-                            ${planHtml}
-                            <span class="w-12 shrink-0 text-right text-gray-600 text-[11px]">${item ? item.time : '-'}</span>
-                            <span class="w-16 shrink-0 text-center text-gray-600 text-[10px]">${mealText}</span>
-                            ${memoHtml}
-                        </div>
-                    `;
-                });
-                rowsHtml += '</div>';
-
-                card.innerHTML = dateCol + rowsHtml;
-                container.appendChild(card);
-            }
-        }
-
-        function changeWeek(direction) {
-            targetDate.setDate(targetDate.getDate() + (direction * 7));
-            renderWeekView();
-        }
-
-        function changeMonth(direction) {
-            targetDate.setMonth(targetDate.getMonth() + direction);
-            renderMonthView();
-            if(!document.getElementById('view-week').classList.contains('hidden')) {
-                renderWeekView();
-            }
-        }
-
-        // --- 月表示 ---
-        function renderMonthView() {
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-
-            let year = targetDate.getFullYear();
-            let month = targetDate.getMonth();
-
-            document.getElementById('month-title-label').innerText = `${year}年 ${month + 1}月`;
-
-            let firstDay = new Date(year, month, 1).getDay();
-            let firstDayIndex = (firstDay === 0) ? 6 : firstDay - 1;
-            let lastDay = new Date(year, month + 1, 0).getDate();
-
-            for (let i = 0; i < firstDayIndex; i++) {
-                let emptyCell = document.createElement('div');
-                emptyCell.className = 'h-24 bg-gray-50/50 border rounded';
-                grid.appendChild(emptyCell);
-            }
-
-            for (let day = 1; day <= lastDay; day++) {
-                let d = new Date(year, month, day);
-                let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                let daySchedules = schedules.filter(s => s.date === dateStr);
-                let offDay = isOffDay(d);
-                let isToday = (dateStr === todayStr);
-
-                let cell = document.createElement('div');
-                let isSelected = (selectedDateStr === dateStr);
-                let bgClass = isSelected ? 'glow-highlight bg-blue-50/50' : 'bg-white hover:bg-gray-50';
-
-                cell.className = `p-0.5 pt-1 border rounded h-24 flex flex-col justify-between text-left cursor-pointer overflow-hidden transition ${bgClass}`;
-                
-                attachPressEvents(cell, dateStr);
-
-                let todayBadge = isToday ? '<span class="text-[9px] text-red-600 font-bold ml-1">本日</span>' : '';
-                
-                let headerHtml = `<div class="text-[10px] font-bold text-gray-700 px-0.5 pb-0.5 flex justify-between items-center shrink-0"><span>${day}</span>${todayBadge}</div>`;
-
-                let persons = ['あきた', 'ちーた'];
-                let rowsHtml = '<div class="flex-1 flex flex-col justify-between overflow-hidden space-y-0.5 px-0.5 pb-0.5">';
-                
-                persons.forEach(person => {
-                    let s = daySchedules.find(item => item.person === person);
-                    let nameBadge = person === 'あきた' ? '<span class="text-blue-600 font-bold shrink-0">あ:</span>' : '<span class="text-red-600 font-bold shrink-0">ち:</span>';
-                    
-                    if (s) {
-                        let mealStr = offDay ? `昼${s.lunch||'-'}/夕${s.dinner||'-'}` : `夕${s.dinner||'-'}`;
-                        rowsHtml += `
-                            <div class="flex items-start text-[8.5px] leading-tight overflow-hidden min-h-0 flex-1">
-                                ${nameBadge}
-                                <span class="line-clamp-3 text-gray-800 ml-0.5">${s.plan} ${s.time} (${mealStr})</span>
-                            </div>
-                        `;
-                    } else {
-                        rowsHtml += `
-                            <div class="flex items-start text-[8.5px] leading-tight text-gray-300 flex-1">
-                                ${nameBadge}
-                                <span class="ml-0.5">-</span>
-                            </div>
-                        `;
-                    }
-                });
-                rowsHtml += '</div>';
-
-                cell.innerHTML = headerHtml + rowsHtml;
-                grid.appendChild(cell);
-            }
-        }
-
-        // --- 単体モーダル制御 ---
-        function openModal(dateStr, person = 'あきた') {
-            selectedDateStr = dateStr;
-            updateMealInputVisibility(dateStr);
-            document.getElementById('input-date').value = dateStr;
-            document.getElementById('input-person').value = person;
-            
-            // 選択した日付を見やすく表示
-            let dObj = new Date(dateStr);
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-            document.getElementById('modal-date-display').innerText = `${dObj.getMonth()+1}/${dObj.getDate()}(${dayNames[dObj.getDay()]})`;
-            
-            fillModalFields(dateStr, person);
-            document.getElementById('schedule-modal').classList.remove('hidden');
-
-            renderMonthView();
-            if(!document.getElementById('view-week').classList.contains('hidden')) {
-                renderWeekView();
-            }
-        }
-
-        function onPersonChange() {
-            let dateStr = document.getElementById('input-date').value;
-            let person = document.getElementById('input-person').value;
-            fillModalFields(dateStr, person);
-        }
-
-        function fillModalFields(dateStr, person) {
-            let item = schedules.find(s => s.date === dateStr && s.person === person);
-            
-            document.getElementById('edit-id').value = item ? item.id : '';
-            document.getElementById('input-plan').value = item ? item.plan : '';
-            document.getElementById('input-time').value = item ? item.time : '';
-            document.getElementById('input-dinner').value = item ? item.dinner : '○';
-            if(document.getElementById('input-lunch')) {
-                document.getElementById('input-lunch').value = item ? (item.lunch || '○') : '○';
-            }
-            document.getElementById('input-memo').value = item ? item.memo : '';
-        }
-
-        function closeModal() {
-            document.getElementById('schedule-modal').classList.add('hidden');
-            selectedDateStr = null;
-            renderMonthView();
-            if(!document.getElementById('view-week').classList.contains('hidden')) {
-                renderWeekView();
-            }
-        }
-
-        function saveSchedule() {
-            let id = document.getElementById('edit-id').value;
-            let person = document.getElementById('input-person').value;
-            let date = document.getElementById('input-date').value;
-            let plan = document.getElementById('input-plan').value;
-            let time = document.getElementById('input-time').value;
-            let dinner = document.getElementById('input-dinner').value;
-            let lunch = document.getElementById('input-lunch') && !document.getElementById('lunch-input-wrap').classList.contains('hidden') ? document.getElementById('input-lunch').value : '';
-            let memo = document.getElementById('input-memo').value;
-
-            if (!date || !plan) {
-                alert('予定は必須です');
-                return;
-            }
-
-            if (id) {
-                let item = schedules.find(s => s.id === id);
-                if (item) {
-                    item.person = person;
-                    item.date = date;
-                    item.plan = plan;
-                    item.time = time;
-                    item.lunch = lunch;
-                    item.dinner = dinner;
-                    item.memo = memo;
-                }
-            } else {
-                let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
-                if (existingIndex !== -1) {
-                    schedules[existingIndex] = { id: schedules[existingIndex].id, person, date, plan, time, lunch, dinner, memo };
-                } else {
-                    let newId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-                    schedules.push({ id: newId, person, date, plan, time, lunch, dinner, memo });
-                }
-            }
-
-            closeModal();
-        }
-
-        // --- 1週間一括入力機能 ---
-        function openBatchModal() {
-            let startOfWeek = new Date(targetDate);
-            let day = startOfWeek.getDay();
-            let diff = (day === 0) ? -6 : 1 - day;
-            startOfWeek.setDate(startOfWeek.getDate() + diff);
-
-            const container = document.getElementById('batch-form-container');
-            container.innerHTML = '';
-
-            const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(startOfWeek);
-                d.setDate(d.getDate() + i);
-                let dateStr = d.toISOString().split('T')[0];
-                let offDay = isOffDay(d);
-                
-                let currentPerson = document.getElementById('batch-person').value;
-                let existing = schedules.find(s => s.date === dateStr && s.person === currentPerson);
-
-                let card = document.createElement('div');
-                card.className = "border rounded p-1.5 bg-gray-50 space-y-1.5 batch-row";
-                card.dataset.date = dateStr;
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold text-gray-700 border-b pb-0.5">
-                        <span>${d.getMonth()+1}/${d.getDate()} (${dayNames[i]})</span>
-                        <span class="text-[9px] text-gray-500">${offDay ? '休日' : '平日'}</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <div>
-                            <label class="text-[9px] font-bold text-gray-500">予定</label>
-                            <input type="text" class="batch-plan w-full border rounded p-1 text-xs bg-white" placeholder="出社、在宅など" value="${existing ? existing.plan : ''}">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-bold text-gray-500">帰宅時刻</label>
-                            <input type="text" class="batch-time w-full border rounded p-1 text-xs bg-white" placeholder="19:00等" value="${existing ? existing.time : ''}">
-                        </div>
-                    </div>
-                    <div class="grid ${offDay ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5">
-                        ${offDay ? `
-                        <div>
-                            <label class="text-[9px] font-bold text-gray-500">昼食</label>
-                            <select class="batch-lunch w-full border rounded p-1 text-xs bg-white">
-                                <option value="○" ${existing?.lunch === '○' ? 'selected' : ''}>○ 食べる</option>
-                                <option value="✕" ${existing?.lunch === '✕' ? 'selected' : ''}>✕ いらない</option>
-                                <option value="△" ${existing?.lunch === '△' ? 'selected' : ''}>△ 未定</option>
-                            </select>
-                        </div>` : ''}
-                        <div>
-                            <label class="text-[9px] font-bold text-gray-500">夕飯</label>
-                            <select class="batch-dinner w-full border rounded p-1 text-xs bg-white">
-                                <option value="○" ${!existing || existing?.dinner === '○' ? 'selected' : ''}>○ 食べる</option>
-                                <option value="✕" ${existing?.dinner === '✕' ? 'selected' : ''}>✕ いらない</option>
-                                <option value="△" ${existing?.dinner === '△' ? 'selected' : ''}>△ 未定</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-bold text-gray-500">メモ</label>
-                        <input type="text" class="batch-memo w-full border rounded p-1 text-xs bg-white" placeholder="メモ" value="${existing ? existing.memo : ''}">
-                    </div>
-                `;
-                container.appendChild(card);
-            }
-
-            document.getElementById('batch-modal').classList.remove('hidden');
-        }
-
-        document.getElementById('batch-person').addEventListener('change', () => {
-            openBatchModal();
-        });
-
-        function closeBatchModal() {
-            document.getElementById('batch-modal').classList.add('hidden');
-        }
-
-        function saveBatchSchedules() {
-            let person = document.getElementById('batch-person').value;
-            let rows = document.querySelectorAll('.batch-row');
-
-            rows.forEach(row => {
-                let date = row.dataset.date;
-                let plan = row.querySelector('.batch-plan').value.trim();
-                let time = row.querySelector('.batch-time').value.trim();
-                let dinner = row.querySelector('.batch-dinner').value;
-                let lunchEl = row.querySelector('.batch-lunch');
-                let lunch = lunchEl ? lunchEl.value : '';
-                let memo = row.querySelector('.batch-memo').value.trim();
-
-                let existingIndex = schedules.findIndex(s => s.date === date && s.person === person);
-
-                if (plan === '') {
-                    if (existingIndex !== -1) {
-                        schedules.splice(existingIndex, 1);
-                    }
-                } else {
-                    if (existingIndex !== -1) {
-                        schedules[existingIndex] = { ...schedules[existingIndex], plan, time, lunch, dinner, memo };
-                    } else {
-                        let newId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-                        schedules.push({ id: newId, person, date, plan, time, lunch, dinner, memo });
-                    }
-                }
-            });
-
-            closeBatchModal();
-            renderMonthView();
-            if(!document.getElementById('view-week').classList.contains('hidden')) {
-                renderWeekView();
-            }
-        }
-
-        renderMonthView();
-    </script>
-</body>
-</html>
+        /* 光彩（グロー効果）のアニメーションやスタイル定義 */
+        .glow-highlight {
+            border-color: #3b82f6 !important;
+            box-
